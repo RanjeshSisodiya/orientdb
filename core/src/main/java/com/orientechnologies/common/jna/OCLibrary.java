@@ -81,4 +81,6 @@ public interface OCLibrary extends Library {
   int mlockall(int flags) throws LastErrorException;
 
   int mlock(Pointer pointer, long len) throws LastErrorException;
+
+  int munlock(Pointer pointer, long len) throws LastErrorException;
 }

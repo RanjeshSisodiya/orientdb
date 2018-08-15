@@ -1553,7 +1553,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
           byteBuffer.rewind();
           byteBuffer.get(data);
         } finally {
-          bufferPool.release(byteBuffer);
+          bufferPool.release(byteBuffer, memoryLock);
         }
 
         final long magicNumber = OLongSerializer.INSTANCE.deserializeNative(data, MAGIC_NUMBER_OFFSET);
@@ -2217,10 +2217,10 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
 
         if (checksumMode == OChecksumMode.StoreAndThrow) {
           if (buffersToRelease == null)
-            bufferPool.release(buffer);
+            bufferPool.release(buffer, memoryLock);
           else
             for (final ByteBuffer bufferToRelease : buffersToRelease)
-              bufferPool.release(bufferToRelease);
+              bufferPool.release(bufferToRelease, memoryLock);
 
           throw new OStorageException(message);
         } else if (checksumMode == OChecksumMode.StoreAndSwitchReadOnlyMode) {
@@ -2244,10 +2244,10 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
       OLogManager.instance().error(this, "%s", null, message);
       if (checksumMode == OChecksumMode.StoreAndThrow) {
         if (buffersToRelease == null)
-          bufferPool.release(buffer);
+          bufferPool.release(buffer, memoryLock);
         else
           for (final ByteBuffer bufferToRelease : buffersToRelease)
-            bufferPool.release(bufferToRelease);
+            bufferPool.release(bufferToRelease, memoryLock);
 
         throw new OStorageException(message);
       } else if (checksumMode == OChecksumMode.StoreAndSwitchReadOnlyMode) {
@@ -2998,7 +2998,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
     }
 
     for (final ByteBuffer buffer : buffers) {
-      bufferPool.release(buffer);
+      bufferPool.release(buffer, memoryLock);
     }
 
     for (final OTriple<Long, ByteBuffer, OCachePointer> triple : chunk) {
@@ -3220,7 +3220,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
                 final OLogSequenceNumber endLSN = pagePointer.getEndLSN();
                 flushPage(pageKey.fileId, pageKey.pageIndex, copy, endLSN);
               } finally {
-                bufferPool.release(copy);
+                bufferPool.release(copy, memoryLock);
               }
 
               removeFromDirtyPages(pageKey);

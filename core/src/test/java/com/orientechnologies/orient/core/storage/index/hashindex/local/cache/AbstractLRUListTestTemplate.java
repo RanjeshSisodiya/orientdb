@@ -32,7 +32,7 @@ public abstract class AbstractLRUListTestTemplate {
     Assert.assertTrue(entryIterator.hasNext());
 
     Assert.assertEquals(entryIterator.next(), new OCacheEntryImpl(1, 10, cachePointer, false));
-    bufferPool.release(buffer);
+    bufferPool.release(buffer, false);
     bufferPool.clear();
   }
 
@@ -57,8 +57,8 @@ public abstract class AbstractLRUListTestTemplate {
     Assert.assertEquals(entryIterator.next(), new OCacheEntryImpl(1, 20, cachePointerTwo, false));
     Assert.assertEquals(entryIterator.next(), new OCacheEntryImpl(1, 10, cachePointerOne, false));
 
-    bufferPool.release(bufferOne);
-    bufferPool.release(bufferTwo);
+    bufferPool.release(bufferOne, false);
+    bufferPool.release(bufferTwo, false);
     bufferPool.clear();
   }
 
@@ -87,9 +87,9 @@ public abstract class AbstractLRUListTestTemplate {
     Assert.assertEquals(entryIterator.next(), new OCacheEntryImpl(1, 20, cachePointerTwo, false));
     Assert.assertEquals(entryIterator.next(), new OCacheEntryImpl(1, 10, cachePointerOne, false));
 
-    bufferPool.release(bufferOne);
-    bufferPool.release(bufferTwo);
-    bufferPool.release(bufferThree);
+    bufferPool.release(bufferOne, false);
+    bufferPool.release(bufferTwo, false);
+    bufferPool.release(bufferThree, false);
 
     bufferPool.clear();
   }
@@ -121,9 +121,9 @@ public abstract class AbstractLRUListTestTemplate {
     Assert.assertEquals(entryIterator.next(), new OCacheEntryImpl(3, 30, cachePointerThree, false));
     Assert.assertEquals(entryIterator.next(), new OCacheEntryImpl(1, 10, cachePointerOne, false));
 
-    bufferPool.release(bufferOne);
-    bufferPool.release(bufferTwo);
-    bufferPool.release(bufferThree);
+    bufferPool.release(bufferOne, false);
+    bufferPool.release(bufferTwo, false);
+    bufferPool.release(bufferThree, false);
 
     bufferPool.clear();
   }
@@ -157,10 +157,10 @@ public abstract class AbstractLRUListTestTemplate {
     Assert.assertEquals(entryIterator.next(), new OCacheEntryImpl(3, 30, cachePointerThree, false));
     Assert.assertEquals(entryIterator.next(), new OCacheEntryImpl(1, 10, cachePointerOne, false));
 
-    bufferPool.release(bufferOne);
-    bufferPool.release(bufferTwo);
-    bufferPool.release(bufferThree);
-    bufferPool.release(bufferFour);
+    bufferPool.release(bufferOne, false);
+    bufferPool.release(bufferTwo, false);
+    bufferPool.release(bufferThree, false);
+    bufferPool.release(bufferFour, false);
 
     bufferPool.clear();
   }
@@ -196,7 +196,7 @@ public abstract class AbstractLRUListTestTemplate {
     }
 
     for (OCachePointer pointer : cachePointers) {
-      bufferPool.release(pointer.getBuffer());
+      bufferPool.release(pointer.getBuffer(), false);
     }
 
     bufferPool.clear();
@@ -216,7 +216,7 @@ public abstract class AbstractLRUListTestTemplate {
     Iterator<OCacheEntry> entryIterator = lruList.iterator();
     Assert.assertFalse(entryIterator.hasNext());
 
-    bufferPool.release(buffer);
+    bufferPool.release(buffer, false);
     bufferPool.clear();
   }
 
@@ -234,7 +234,7 @@ public abstract class AbstractLRUListTestTemplate {
 
     Assert.assertNull(removedLRU);
 
-    bufferPool.release(buffer);
+    bufferPool.release(buffer, false);
     bufferPool.clear();
   }
 
@@ -263,7 +263,7 @@ public abstract class AbstractLRUListTestTemplate {
     }
 
     for (OCachePointer cachePointer : cachePointers) {
-      bufferPool.release(cachePointer.getBuffer());
+      bufferPool.release(cachePointer.getBuffer(), false);
     }
 
     bufferPool.clear();
@@ -296,7 +296,7 @@ public abstract class AbstractLRUListTestTemplate {
     }
 
     for (OCachePointer cachePointer : cachePointers) {
-      bufferPool.release(cachePointer.getBuffer());
+      bufferPool.release(cachePointer.getBuffer(), false);
     }
     bufferPool.clear();
   }
@@ -328,7 +328,7 @@ public abstract class AbstractLRUListTestTemplate {
     }
 
     for (OCachePointer cachePointer : cachePointers) {
-      bufferPool.release(cachePointer.getBuffer());
+      bufferPool.release(cachePointer.getBuffer(), false);
     }
     bufferPool.clear();
   }
@@ -353,7 +353,7 @@ public abstract class AbstractLRUListTestTemplate {
     }
 
     for (OCachePointer cachePointer : cachePointers) {
-      bufferPool.release(cachePointer.getBuffer());
+      bufferPool.release(cachePointer.getBuffer(), false);
     }
 
     bufferPool.clear();
@@ -382,7 +382,7 @@ public abstract class AbstractLRUListTestTemplate {
     }
 
     for (OCachePointer pointer : cachePointers) {
-      bufferPool.release(pointer.getBuffer());
+      bufferPool.release(pointer.getBuffer(), false);
     }
 
     bufferPool.clear();
@@ -411,7 +411,7 @@ public abstract class AbstractLRUListTestTemplate {
     }
 
     for (OCachePointer cachePointer : cachePointers) {
-      bufferPool.release(cachePointer.getBuffer());
+      bufferPool.release(cachePointer.getBuffer(), false);
     }
 
     bufferPool.clear();
@@ -448,7 +448,7 @@ public abstract class AbstractLRUListTestTemplate {
     }
 
     for (OCachePointer cachePointer : cachePointers) {
-      bufferPool.release(cachePointer.getBuffer());
+      bufferPool.release(cachePointer.getBuffer(), false);
     }
 
     bufferPool.clear();

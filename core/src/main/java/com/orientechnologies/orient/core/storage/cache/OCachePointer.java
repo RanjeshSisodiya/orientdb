@@ -182,7 +182,7 @@ public class OCachePointer {
   public void decrementReferrer() {
     final int rf = referrersCount.decrementAndGet();
     if (rf == 0 && buffer != null) {
-      bufferPool.release(buffer);
+      bufferPool.release(buffer, true);
     }
 
     if (rf < 0)
@@ -258,7 +258,7 @@ public class OCachePointer {
     if (referrersCount.get() > 0 && buffer != null) {
       if (!needInfo) // not logged yet
         bufferPool.logTrackedBufferInfo("finalizing", buffer);
-      bufferPool.release(buffer);
+      bufferPool.release(buffer, true);
     }
   }
 

@@ -780,7 +780,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
                   }
                 }
               } finally {
-                allocator.deallocate(ptr);
+                allocator.deallocate(ptr, memoryLock);
               }
 
               pageIndex++;
@@ -1430,7 +1430,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
     fileCloseQueue.clear();
 
     if (writeBufferPointer != null) {
-      allocator.deallocate(writeBufferPointer);
+      allocator.deallocate(writeBufferPointer, memoryLock);
       writeBuffer = null;
       writeBufferPageIndex = -1;
     }
@@ -2069,7 +2069,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
         final OLogSequenceNumber checkpointLSN) throws IOException {
 
       if (buffer.position() <= OCASWALPage.RECORDS_OFFSET) {
-        allocator.deallocate(pointer);
+        allocator.deallocate(pointer, memoryLock);
         return;
       }
 
@@ -2177,7 +2177,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
           OLogManager.instance().errorNoDb(this, "Error during WAL data write", e);
           throw e;
         } finally {
-          allocator.deallocate(pointer);
+          allocator.deallocate(pointer, memoryLock);
         }
 
         return null;

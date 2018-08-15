@@ -45,11 +45,11 @@ public class OByteBufferPoolTest {
 
     assertBufferIsClear(bufferTwo);
 
-    byteBufferPool.release(bufferOne);
+    byteBufferPool.release(bufferOne, false);
     Assert.assertEquals(0, byteBufferPool.getPoolSize());
     Assert.assertEquals(42, allocator.getMemoryConsumption());
 
-    byteBufferPool.release(bufferTwo);
+    byteBufferPool.release(bufferTwo, false);
     Assert.assertEquals(0, byteBufferPool.getPoolSize());
     Assert.assertEquals(0, allocator.getMemoryConsumption());
 
@@ -81,17 +81,17 @@ public class OByteBufferPoolTest {
     Assert.assertEquals(0, byteBufferPool.getPoolSize());
     Assert.assertEquals(126, allocator.getMemoryConsumption());
 
-    byteBufferPool.release(bufferOne);
+    byteBufferPool.release(bufferOne, false);
 
     Assert.assertEquals(1, byteBufferPool.getPoolSize());
     Assert.assertEquals(126, allocator.getMemoryConsumption());
 
-    byteBufferPool.release(bufferTwo);
+    byteBufferPool.release(bufferTwo, false);
 
     Assert.assertEquals(2, byteBufferPool.getPoolSize());
     Assert.assertEquals(126, allocator.getMemoryConsumption());
 
-    byteBufferPool.release(bufferThree);
+    byteBufferPool.release(bufferThree, false);
 
     Assert.assertEquals(2, byteBufferPool.getPoolSize());
     Assert.assertEquals(84, allocator.getMemoryConsumption());
@@ -121,7 +121,7 @@ public class OByteBufferPoolTest {
     Assert.assertEquals(0, byteBufferPool.getPoolSize());
     Assert.assertEquals(126, allocator.getMemoryConsumption());
 
-    byteBufferPool.release(bufferThree);
+    byteBufferPool.release(bufferThree, false);
 
     Assert.assertEquals(1, byteBufferPool.getPoolSize());
     Assert.assertEquals(126, allocator.getMemoryConsumption());
@@ -135,18 +135,18 @@ public class OByteBufferPoolTest {
 
     assertBufferIsClear(bufferThree);
 
-    byteBufferPool.release(bufferThree);
+    byteBufferPool.release(bufferThree, false);
 
     Assert.assertEquals(1, byteBufferPool.getPoolSize());
     Assert.assertEquals(126, allocator.getMemoryConsumption());
 
-    byteBufferPool.release(bufferOne);
+    byteBufferPool.release(bufferOne, false);
 
     Assert.assertEquals(2, byteBufferPool.getPoolSize());
     Assert.assertEquals(126, allocator.getMemoryConsumption());
 
     try {
-      byteBufferPool.release(bufferThree);
+      byteBufferPool.release(bufferThree, false);
       Assert.fail();
     } catch (IllegalArgumentException e) {
       Assert.assertTrue(true);
@@ -155,13 +155,13 @@ public class OByteBufferPoolTest {
     Assert.assertEquals(2, byteBufferPool.getPoolSize());
     Assert.assertEquals(126, allocator.getMemoryConsumption());
 
-    byteBufferPool.release(bufferTwo);
+    byteBufferPool.release(bufferTwo, false);
 
     Assert.assertEquals(2, byteBufferPool.getPoolSize());
     Assert.assertEquals(84, allocator.getMemoryConsumption());
 
     try {
-      byteBufferPool.release(bufferTwo);
+      byteBufferPool.release(bufferTwo, false);
       Assert.fail();
     } catch (IllegalArgumentException e) {
       Assert.assertTrue(true);
@@ -171,7 +171,7 @@ public class OByteBufferPoolTest {
     Assert.assertEquals(84, allocator.getMemoryConsumption());
 
     try {
-      byteBufferPool.release(bufferOne);
+      byteBufferPool.release(bufferOne, false);
       Assert.fail();
     } catch (IllegalArgumentException e) {
       Assert.assertTrue(true);
@@ -247,7 +247,7 @@ public class OByteBufferPoolTest {
             } else {
               final int bufferToRemove = random.nextInt(allocatedBuffers.size());
               final ByteBuffer buffer = allocatedBuffers.remove(bufferToRemove);
-              pool.release(buffer);
+              pool.release(buffer, false);
             }
           } else {
             if (random.nextDouble() <= 0.4) {
@@ -256,14 +256,14 @@ public class OByteBufferPoolTest {
             } else {
               final int bufferToRemove = random.nextInt(allocatedBuffers.size());
               final ByteBuffer buffer = allocatedBuffers.remove(bufferToRemove);
-              pool.release(buffer);
+              pool.release(buffer, false);
             }
           }
         }
 
         System.out.println("Allocated buffers " + allocatedBuffers.size());
         for (ByteBuffer buffer : allocatedBuffers) {
-          pool.release(buffer);
+          pool.release(buffer, false);
         }
       } catch (Exception | Error e) {
         e.printStackTrace();
