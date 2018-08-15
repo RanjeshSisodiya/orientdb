@@ -167,16 +167,12 @@ public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
   /**
    * Returns allocated direct memory back to OS
    */
-  public void deallocate(OPointer pointer, boolean lockMemory) {
+  public void deallocate(OPointer pointer) {
     if (pointer == null) {
       throw new IllegalArgumentException("Null value is passed");
     }
 
     final Pointer ptr = pointer.getNativePointer();
-    if (isLinux && lockMemory) {
-      ONative.instance().munlock(ptr, pointer.getSize());
-    }
-
     Native.free(Pointer.nativeValue(ptr));
     memoryConsumption.add(-pointer.getSize());
     untrack(pointer);

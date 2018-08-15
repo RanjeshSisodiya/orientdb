@@ -205,7 +205,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
       thread.setUncaughtExceptionHandler(new OUncaughtExceptionHandler());
       return thread;
     });
-    this.memoryLock = false;
+    this.memoryLock = memoryLock;
 
     writeExecutor = new OThreadPoolExecutorWithLogging(1, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), r -> {
       final Thread thread = new Thread(OStorageAbstract.storageThreadGroup, r);
@@ -780,7 +780,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
                   }
                 }
               } finally {
-                allocator.deallocate(ptr, memoryLock);
+                allocator.deallocate(ptr);
               }
 
               pageIndex++;
@@ -1430,7 +1430,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
     fileCloseQueue.clear();
 
     if (writeBufferPointer != null) {
-      allocator.deallocate(writeBufferPointer, memoryLock);
+      allocator.deallocate(writeBufferPointer);
       writeBuffer = null;
       writeBufferPageIndex = -1;
     }
@@ -2069,7 +2069,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
         final OLogSequenceNumber checkpointLSN) throws IOException {
 
       if (buffer.position() <= OCASWALPage.RECORDS_OFFSET) {
-        allocator.deallocate(pointer, memoryLock);
+        allocator.deallocate(pointer);
         return;
       }
 
@@ -2177,7 +2177,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
           OLogManager.instance().errorNoDb(this, "Error during WAL data write", e);
           throw e;
         } finally {
-          allocator.deallocate(pointer, memoryLock);
+          allocator.deallocate(pointer);
         }
 
         return null;

@@ -160,7 +160,7 @@ public class OByteBufferPool implements OByteBufferPoolMXBean {
    *
    * @see OGlobalConfiguration#DIRECT_MEMORY_POOL_LIMIT
    */
-  public void release(ByteBuffer buffer, boolean memoryLock) {
+  public void release(ByteBuffer buffer) {
     final PointerHolder holder = bufferPointerMapping.remove(wrapBuffer(buffer));
 
     if (holder == null) {
@@ -170,7 +170,7 @@ public class OByteBufferPool implements OByteBufferPoolMXBean {
     long poolSize = pointersPoolSize.incrementAndGet();
     if (poolSize > this.poolSize) {
       pointersPoolSize.decrementAndGet();
-      allocator.deallocate(holder.pointer, memoryLock);
+      allocator.deallocate(holder.pointer);
     } else {
       pointersPool.add(holder.pointer);
     }
@@ -228,7 +228,7 @@ public class OByteBufferPool implements OByteBufferPoolMXBean {
    */
   public void clear() {
     for (OPointer pointer : pointersPool) {
-      allocator.deallocate(pointer, true);
+      allocator.deallocate(pointer);
     }
 
     pointersPool.clear();
@@ -244,7 +244,7 @@ public class OByteBufferPool implements OByteBufferPoolMXBean {
     }
 
     for (PointerHolder holder : bufferPointerMapping.values()) {
-      allocator.deallocate(holder.pointer, true);
+      allocator.deallocate(holder.pointer);
     }
 
     bufferPointerMapping.clear();
