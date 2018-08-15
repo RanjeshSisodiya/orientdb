@@ -27,8 +27,6 @@ import com.orientechnologies.orient.core.storage.cache.OWriteCache;
 import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager;
-import com.orientechnologies.orient.core.storage.impl.local.statistic.OPerformanceStatisticManager;
-import com.orientechnologies.orient.core.storage.impl.local.statistic.OSessionStoragePerformanceStatistic;
 
 import java.io.IOException;
 
@@ -58,7 +56,6 @@ public abstract class ODurableComponent extends OSharedResourceAdaptive {
   protected final OAbstractPaginatedStorage    storage;
   protected final OReadCache                   readCache;
   protected final OWriteCache                  writeCache;
-  protected final OPerformanceStatisticManager performanceStatisticManager;
 
   private volatile String name;
   private volatile String fullName;
@@ -78,7 +75,6 @@ public abstract class ODurableComponent extends OSharedResourceAdaptive {
     this.atomicOperationsManager = storage.getAtomicOperationsManager();
     this.readCache = storage.getReadCache();
     this.writeCache = storage.getWriteCache();
-    this.performanceStatisticManager = storage.getPerformanceStatisticManager();
     this.lockName = lockName;
   }
 
@@ -216,22 +212,4 @@ public abstract class ODurableComponent extends OSharedResourceAdaptive {
     else
       atomicOperation.truncateFile(filedId);
   }
-
-  protected void startOperation() {
-    OSessionStoragePerformanceStatistic sessionStoragePerformanceStatistic = performanceStatisticManager
-        .getSessionPerformanceStatistic();
-    if (sessionStoragePerformanceStatistic != null) {
-      sessionStoragePerformanceStatistic
-          .startComponentOperation(getFullName(), OSessionStoragePerformanceStatistic.ComponentType.GENERAL);
-    }
-  }
-
-  protected void completeOperation() {
-    OSessionStoragePerformanceStatistic sessionStoragePerformanceStatistic = performanceStatisticManager
-        .getSessionPerformanceStatistic();
-    if (sessionStoragePerformanceStatistic != null) {
-      sessionStoragePerformanceStatistic.completeComponentOperation();
-    }
-  }
-
 }

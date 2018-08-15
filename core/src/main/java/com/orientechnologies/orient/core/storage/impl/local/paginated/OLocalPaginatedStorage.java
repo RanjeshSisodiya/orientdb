@@ -409,8 +409,8 @@ public class OLocalPaginatedStorage extends OAbstractPaginatedStorage {
         getConfiguration().getContextConfiguration().getValueAsBoolean(OGlobalConfiguration.STORAGE_CALL_FSYNC),
         getConfiguration().getContextConfiguration()
             .getValueAsBoolean(OGlobalConfiguration.STORAGE_PRINT_WAL_PERFORMANCE_STATISTICS),
-        getConfiguration().getContextConfiguration()
-            .getValueAsInteger(OGlobalConfiguration.STORAGE_PRINT_WAL_PERFORMANCE_INTERVAL));
+        getConfiguration().getContextConfiguration().getValueAsInteger(OGlobalConfiguration.STORAGE_PRINT_WAL_PERFORMANCE_INTERVAL),
+        OGlobalConfiguration.MEMORY_LOCK.getValueAsBoolean());
 
     return restoreWAL;
   }
@@ -578,7 +578,8 @@ public class OLocalPaginatedStorage extends OAbstractPaginatedStorage {
           getConfiguration().getContextConfiguration()
               .getValueAsBoolean(OGlobalConfiguration.STORAGE_PRINT_WAL_PERFORMANCE_STATISTICS),
           getConfiguration().getContextConfiguration()
-              .getValueAsInteger(OGlobalConfiguration.STORAGE_PRINT_WAL_PERFORMANCE_INTERVAL));
+              .getValueAsInteger(OGlobalConfiguration.STORAGE_PRINT_WAL_PERFORMANCE_INTERVAL),
+          OGlobalConfiguration.MEMORY_LOCK.getValueAsBoolean());
 
       diskWriteAheadLog.addLowDiskSpaceListener(this);
       writeAheadLog = diskWriteAheadLog;
@@ -629,7 +630,8 @@ public class OLocalPaginatedStorage extends OAbstractPaginatedStorage {
         getStoragePath(), getName(), binarySerializerFactory.getObjectSerializer(OType.STRING), files, getId(),
         contextConfiguration.getValueAsEnum(OGlobalConfiguration.STORAGE_CHECKSUM_MODE, OChecksumMode.class), true,
         contextConfiguration.getValueAsBoolean(OGlobalConfiguration.STORAGE_CALL_FSYNC), exclusiveWriteCacheBoundary,
-        printCacheStatistics, statisticsPrintInterval, flushTillSegmentLogging, fileFlushLogging, fileRemovalLogging);
+        printCacheStatistics, statisticsPrintInterval, flushTillSegmentLogging, fileFlushLogging, fileRemovalLogging,
+        OGlobalConfiguration.MEMORY_LOCK.getValueAsBoolean());
 
     wowCache.addLowDiskSpaceListener(this);
     wowCache.loadRegisteredFiles();

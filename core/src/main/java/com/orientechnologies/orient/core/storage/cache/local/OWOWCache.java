@@ -413,6 +413,8 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
 
   private final int chunkSize;
 
+  private final boolean memoryLock;
+
   /**
    * Listeners which are called when exception in background data flush thread is happened.
    */
@@ -423,7 +425,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
       String storageName, OBinarySerializer<String> stringSerializer, final OClosableLinkedContainer<Long, OFileClassic> files,
       final int id, final OChecksumMode checksumMode, boolean allowDirectIO, boolean callFsync, double exclusiveWriteCacheBoundary,
       boolean printCacheStatistics, int statisticsPrintInterval, boolean flushTillSegmentLogging, boolean fileFlushLogging,
-      boolean fileRemovalLogging) {
+      boolean fileRemovalLogging, boolean memoryLock) {
 
     this.callFsync = callFsync;
     this.exclusiveWriteCacheBoundary = exclusiveWriteCacheBoundary;
@@ -432,6 +434,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
     this.flushTillSegmentLogging = flushTillSegmentLogging;
     this.fileFlushLogging = fileFlushLogging;
     this.fileRemovalLogging = fileRemovalLogging;
+    this.memoryLock = memoryLock;
 
     filesLock.acquireWriteLock();
     try {
@@ -1161,7 +1164,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
               startAllocationIndex = fileSize / pageSize;
 
               for (long index = startAllocationIndex; index <= stopAllocationIndex; index++) {
-                final ByteBuffer buffer = bufferPool.acquireDirect(true);
+                final ByteBuffer buffer = bufferPool.acquireDirect(true, memoryLock);
                 buffer.putLong(MAGIC_NUMBER_OFFSET, MAGIC_NUMBER_WITHOUT_CHECKSUM);
 
                 final OCachePointer cachePointer = new OCachePointer(buffer, bufferPool, fileId, index);
@@ -1544,7 +1547,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
 
         final byte[] data = new byte[pageSize];
 
-        ByteBuffer byteBuffer = bufferPool.acquireDirect(true);
+        ByteBuffer byteBuffer = bufferPool.acquireDirect(true, memoryLock);
         try {
           fileClassic.read(pos, byteBuffer, true);
           byteBuffer.rewind();
@@ -2122,7 +2125,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
 
           try {
             if (pageCount == 1) {
-              final ByteBuffer buffer = bufferPool.acquireDirect(false);
+              final ByteBuffer buffer = bufferPool.acquireDirect(false, memoryLock);
               assert buffer.position() == 0;
               fileClassic.read(firstPageStartPosition, buffer, false);
 
@@ -2142,7 +2145,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
 
             final ByteBuffer[] buffers = new ByteBuffer[realPageCount];
             for (int i = 0; i < buffers.length; i++) {
-              buffers[i] = bufferPool.acquireDirect(false);
+              buffers[i] = bufferPool.acquireDirect(false, memoryLock);
               assert buffers[i].position() == 0;
             }
 
@@ -2869,7 +2872,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
           final long version;
           final OLogSequenceNumber fullLogLSN;
 
-          final ByteBuffer copy = bufferPool.acquireDirect(false);
+          final ByteBuffer copy = bufferPool.acquireDirect(false, memoryLock);
           try {
             version = pointer.getVersion();
             final ByteBuffer buffer = pointer.getBufferDuplicate();
@@ -3093,7 +3096,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
         } else {
           if (pointer.tryAcquireSharedLock()) {
             final OLogSequenceNumber fullLSN;
-            final ByteBuffer copy = bufferPool.acquireDirect(false);
+            final ByteBuffer copy = bufferPool.acquireDirect(false, memoryLock);
             try {
               version = pointer.getVersion();
               final ByteBuffer buffer = pointer.getBufferDuplicate();
@@ -3208,7 +3211,7 @@ public final class OWOWCache extends OAbstractWriteCache implements OWriteCache,
 
             try {
               final ByteBuffer buffer = pagePointer.getBufferDuplicate();
-              final ByteBuffer copy = bufferPool.acquireDirect(false);
+              final ByteBuffer copy = bufferPool.acquireDirect(false, memoryLock);
 
               try {
                 buffer.position(0);

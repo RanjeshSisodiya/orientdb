@@ -32,7 +32,6 @@ import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurableComponent;
-import com.orientechnologies.orient.core.storage.impl.local.statistic.OSessionStoragePerformanceStatistic;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
@@ -2165,13 +2164,4 @@ public class OLocalHashTable20<K, V> extends ODurableComponent implements OHashT
     throw new IllegalStateException("Extendible hashing tree in corrupted state.");
   }
 
-  @Override
-  protected void startOperation() {
-    OSessionStoragePerformanceStatistic sessionStoragePerformanceStatistic = performanceStatisticManager
-        .getSessionPerformanceStatistic();
-    if (sessionStoragePerformanceStatistic != null) {
-      sessionStoragePerformanceStatistic
-          .startComponentOperation(getFullName(), OSessionStoragePerformanceStatistic.ComponentType.INDEX);
-    }
-  }
 }

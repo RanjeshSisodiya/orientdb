@@ -130,15 +130,16 @@ public class OByteBufferPool implements OByteBufferPoolMXBean {
    * memory chunk is allocated from direct memory.
    *
    * @param clear Whether returned buffer should be filled with zeros before return.
+   * @param lockMemory Prevents memory from swapping, valid only for Linux.
    *
    * @return Direct memory buffer instance.
    */
-  public ByteBuffer acquireDirect(boolean clear) {
+  public ByteBuffer acquireDirect(boolean clear, boolean lockMemory) {
     OPointer pointer = pointersPool.poll();
     if (pointer != null) {
       pointersPoolSize.decrementAndGet();
     } else {
-      pointer = allocator.allocate(pageSize, -1);
+      pointer = allocator.allocate(pageSize, -1, lockMemory);
     }
 
     if (clear) {

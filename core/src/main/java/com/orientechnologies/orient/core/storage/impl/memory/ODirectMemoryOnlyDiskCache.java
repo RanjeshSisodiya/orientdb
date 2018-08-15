@@ -36,8 +36,6 @@ import com.orientechnologies.orient.core.storage.cache.local.OBackgroundExceptio
 import com.orientechnologies.orient.core.storage.impl.local.OLowDiskSpaceListener;
 import com.orientechnologies.orient.core.storage.impl.local.OPageIsBrokenListener;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSequenceNumber;
-import com.orientechnologies.orient.core.storage.impl.local.statistic.OPerformanceStatisticManager;
-import com.orientechnologies.orient.core.storage.impl.local.statistic.OSessionStoragePerformanceStatistic;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -67,14 +65,14 @@ public class ODirectMemoryOnlyDiskCache extends OAbstractWriteCache implements O
 
   private int counter = 0;
 
-  private final int                          pageSize;
-  private final int                          id;
-  private final OPerformanceStatisticManager performanceStatisticManager;
+  private final int     pageSize;
+  private final int     id;
+  private final boolean memoryLock;
 
-  ODirectMemoryOnlyDiskCache(int pageSize, int id, OPerformanceStatisticManager performanceStatisticManager) {
+  ODirectMemoryOnlyDiskCache(int pageSize, int id, boolean memoryLock) {
     this.pageSize = pageSize;
     this.id = id;
-    this.performanceStatisticManager = performanceStatisticManager;
+    this.memoryLock = memoryLock;
   }
 
   /**
@@ -95,7 +93,7 @@ public class ODirectMemoryOnlyDiskCache extends OAbstractWriteCache implements O
         counter++;
         final int id = counter;
 
-        files.put(id, new MemoryFile(this.id, id));
+        files.put(id, new MemoryFile(this.id, id, memoryLock));
         fileNameIdMap.put(fileName, id);
 
         fileId = id;
@@ -170,7 +168,7 @@ public class ODirectMemoryOnlyDiskCache extends OAbstractWriteCache implements O
       if (fileNameIdMap.containsKey(fileName))
         throw new OStorageException(fileName + " already exists.");
 
-      files.put(intId, new MemoryFile(id, intId));
+      files.put(intId, new MemoryFile(id, intId, memoryLock));
       fileNameIdMap.put(fileName, intId);
       fileIdNameMap.put(intId, fileName);
 
@@ -209,32 +207,20 @@ public class ODirectMemoryOnlyDiskCache extends OAbstractWriteCache implements O
   }
 
   private OCacheEntry doLoad(long fileId, long pageIndex) {
-    final OSessionStoragePerformanceStatistic sessionStoragePerformanceStatistic = performanceStatisticManager
-        .getSessionPerformanceStatistic();
 
-    if (sessionStoragePerformanceStatistic != null) {
-      sessionStoragePerformanceStatistic.startPageReadFromCacheTimer();
+    int intId = extractFileId(fileId);
+
+    final MemoryFile memoryFile = getFile(intId);
+    final OCacheEntry cacheEntry = memoryFile.loadPage(pageIndex);
+    if (cacheEntry == null)
+      return null;
+
+    //noinspection SynchronizationOnLocalVariableOrMethodParameter
+    synchronized (cacheEntry) {
+      cacheEntry.incrementUsages();
     }
 
-    try {
-      int intId = extractFileId(fileId);
-
-      final MemoryFile memoryFile = getFile(intId);
-      final OCacheEntry cacheEntry = memoryFile.loadPage(pageIndex);
-      if (cacheEntry == null)
-        return null;
-
-      //noinspection SynchronizationOnLocalVariableOrMethodParameter
-      synchronized (cacheEntry) {
-        cacheEntry.incrementUsages();
-      }
-
-      return cacheEntry;
-    } finally {
-      if (sessionStoragePerformanceStatistic != null) {
-        sessionStoragePerformanceStatistic.stopPageReadFromCacheTimer();
-      }
-    }
+    return cacheEntry;
   }
 
   @Override
@@ -243,31 +229,18 @@ public class ODirectMemoryOnlyDiskCache extends OAbstractWriteCache implements O
 
   @Override
   public OCacheEntry allocateNewPage(long fileId, OWriteCache writeCache, boolean verifyChecksums, OLogSequenceNumber startLSN) {
-    final OSessionStoragePerformanceStatistic sessionStoragePerformanceStatistic = performanceStatisticManager
-        .getSessionPerformanceStatistic();
+    int intId = extractFileId(fileId);
 
-    if (sessionStoragePerformanceStatistic != null) {
-      sessionStoragePerformanceStatistic.startPageReadFromCacheTimer();
+    final MemoryFile memoryFile = getFile(intId);
+    final OCacheEntry cacheEntry = memoryFile.addNewPage();
+
+    //noinspection SynchronizationOnLocalVariableOrMethodParameter
+    synchronized (cacheEntry) {
+      cacheEntry.incrementUsages();
     }
 
-    try {
-      int intId = extractFileId(fileId);
-
-      final MemoryFile memoryFile = getFile(intId);
-      final OCacheEntry cacheEntry = memoryFile.addNewPage();
-
-      //noinspection SynchronizationOnLocalVariableOrMethodParameter
-      synchronized (cacheEntry) {
-        cacheEntry.incrementUsages();
-      }
-
-      cacheEntry.acquireExclusiveLock();
-      return cacheEntry;
-    } finally {
-      if (sessionStoragePerformanceStatistic != null) {
-        sessionStoragePerformanceStatistic.stopPageReadFromCacheTimer();
-      }
-    }
+    cacheEntry.acquireExclusiveLock();
+    return cacheEntry;
   }
 
   private MemoryFile getFile(int fileId) {
@@ -483,10 +456,12 @@ public class ODirectMemoryOnlyDiskCache extends OAbstractWriteCache implements O
     private final ReadWriteLock clearLock = new ReentrantReadWriteLock();
 
     private final ConcurrentSkipListMap<Long, OCacheEntry> content = new ConcurrentSkipListMap<>();
+    private final boolean                                  memoryLock;
 
-    private MemoryFile(int storageId, int id) {
+    private MemoryFile(int storageId, int id, boolean memoryLock) {
       this.storageId = storageId;
       this.id = id;
+      this.memoryLock = memoryLock;
     }
 
     private OCacheEntry loadPage(long index) {
@@ -513,7 +488,7 @@ public class ODirectMemoryOnlyDiskCache extends OAbstractWriteCache implements O
           }
 
           final OByteBufferPool bufferPool = OByteBufferPool.instance();
-          final ByteBuffer buffer = bufferPool.acquireDirect(true);
+          final ByteBuffer buffer = bufferPool.acquireDirect(true, memoryLock);
 
           final OCachePointer cachePointer = new OCachePointer(buffer, bufferPool, id, index);
           cachePointer.incrementReferrer();

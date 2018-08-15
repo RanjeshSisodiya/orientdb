@@ -25,6 +25,7 @@ import com.sun.jna.LastErrorException;
 import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Platform;
+import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 
 import javax.management.AttributeNotFoundException;
@@ -64,6 +65,11 @@ public class ONative {
   public static final int SEEK_SET = 0;
   public static final int SEEK_CUR = 1;
   public static final int SEEK_END = 2;
+
+  /**
+   * Prevent all currently allocated pages from swapping.
+   */
+  public static final int MCL_CURRENT = 1;
 
   public static ONative instance() {
     if (instance != null)
@@ -268,6 +274,14 @@ public class ONative {
 
   public int close(int fd) throws LastErrorException {
     return C_LIBRARY.close(fd);
+  }
+
+  public int mlockall(int flags) throws LastErrorException {
+    return C_LIBRARY.mlockall(flags);
+  }
+
+  public int mlock(Pointer pointer, long len) throws LastErrorException {
+    return C_LIBRARY.mlock(pointer, len);
   }
 
   private long updateMemoryLimit(long memoryLimit, final long newMemoryLimit) {

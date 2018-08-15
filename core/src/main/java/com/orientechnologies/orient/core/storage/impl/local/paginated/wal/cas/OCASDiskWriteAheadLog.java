@@ -192,10 +192,12 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
 
   private long reportTs = -1;
 
+  private final boolean memoryLock;
+
   public OCASDiskWriteAheadLog(final String storageName, final Path storagePath, final Path walPath, final int maxPagesCacheSize,
       long segmentsInterval, final long maxSegmentSize, final int commitDelay, final boolean filterWALFiles, final Locale locale,
       final long walSizeHardLimit, final long freeSpaceLimit, final int fsyncInterval, boolean allowDirectIO, boolean callFsync,
-      boolean printPerformanceStatistic, int statisticPrintInterval) throws IOException {
+      boolean printPerformanceStatistic, int statisticPrintInterval, boolean memoryLock) throws IOException {
     commitExecutor = new OScheduledThreadPoolExecutorWithLogging(1, r -> {
       final Thread thread = new Thread(OStorageAbstract.storageThreadGroup, r);
       thread.setDaemon(true);
@@ -203,6 +205,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
       thread.setUncaughtExceptionHandler(new OUncaughtExceptionHandler());
       return thread;
     });
+    this.memoryLock = memoryLock;
 
     writeExecutor = new OThreadPoolExecutorWithLogging(1, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), r -> {
       final Thread thread = new Thread(OStorageAbstract.storageThreadGroup, r);
@@ -706,7 +709,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
             while (pageIndex * pageSize < chSize) {
               file.position(pageIndex * pageSize);
 
-              final OPointer ptr = allocator.allocate(pageSize, blockSize);
+              final OPointer ptr = allocator.allocate(pageSize, blockSize, memoryLock);
               try {
                 final ByteBuffer buffer = ptr.getNativeByteBuffer().order(ByteOrder.nativeOrder());
                 file.readBuffer(buffer);
@@ -1883,7 +1886,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
                         writeBuffer(walFile, writeBuffer, writeBufferPointer, lastLSN, checkPointLSN);
                       }
 
-                      writeBufferPointer = allocator.allocate(BUFFER_SIZE, blockSize);
+                      writeBufferPointer = allocator.allocate(BUFFER_SIZE, blockSize, memoryLock);
                       writeBuffer = writeBufferPointer.getNativeByteBuffer().order(ByteOrder.nativeOrder());
                       writeBufferPageIndex = -1;
 

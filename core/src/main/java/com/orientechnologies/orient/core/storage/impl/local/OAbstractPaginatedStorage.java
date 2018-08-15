@@ -286,10 +286,6 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
   @SuppressWarnings("WeakerAccess")
   protected final OSBTreeCollectionManagerShared sbTreeCollectionManager;
 
-  private final OPerformanceStatisticManager performanceStatisticManager = new OPerformanceStatisticManager(this,
-      OGlobalConfiguration.STORAGE_PROFILER_SNAPSHOT_INTERVAL.getValueAsInteger() * 1000000L,
-      OGlobalConfiguration.STORAGE_PROFILER_CLEANUP_INTERVAL.getValueAsInteger() * 1000000L);
-
   protected volatile OWriteAheadLog          writeAheadLog;
   private            OStorageRecoverListener recoverListener;
 
@@ -382,20 +378,9 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
 
         preOpenSteps();
 
-        try {
-          performanceStatisticManager.registerMBean(name, id);
-        } catch (Exception e) {
-          OLogManager.instance().error(this, "MBean for profiler cannot be registered.", e);
-        }
-
         initWalAndDiskCache(contextConfiguration);
 
         atomicOperationsManager = new OAtomicOperationsManager(this);
-        try {
-          atomicOperationsManager.registerMBean();
-        } catch (Exception e) {
-          OLogManager.instance().error(this, "MBean for atomic operations manager cannot be registered", e);
-        }
 
         recoverIfNeeded();
 
@@ -571,20 +556,10 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
 
         ((OStorageConfigurationImpl) configuration).initConfiguration(contextConfiguration);
         componentsFactory = new OCurrentStorageComponentsFactory(getConfiguration());
-        try {
-          performanceStatisticManager.registerMBean(name, id);
-        } catch (Exception e) {
-          OLogManager.instance().error(this, "MBean for profiler cannot be registered.", e);
-        }
         transaction = new ThreadLocal<>();
         initWalAndDiskCache(contextConfiguration);
 
         atomicOperationsManager = new OAtomicOperationsManager(this);
-        try {
-          atomicOperationsManager.registerMBean();
-        } catch (Exception e) {
-          OLogManager.instance().error(this, "MBean for atomic operations manager cannot be registered", e);
-        }
 
         preCreateSteps();
 
@@ -1774,7 +1749,7 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
   }
 
   public OPerformanceStatisticManager getPerformanceStatisticManager() {
-    return performanceStatisticManager;
+    return null;
   }
 
   /**
@@ -1784,15 +1759,6 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
    * @see #completeGatheringPerformanceStatisticForCurrentThread()
    */
   public void startGatheringPerformanceStatisticForCurrentThread() {
-    try {
-      performanceStatisticManager.startThreadMonitoring();
-    } catch (RuntimeException ee) {
-      throw logAndPrepareForRethrow(ee);
-    } catch (Error ee) {
-      throw logAndPrepareForRethrow(ee);
-    } catch (Throwable t) {
-      throw logAndPrepareForRethrow(t);
-    }
   }
 
   /**
@@ -1803,15 +1769,7 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
    * <code>null</code> if profiling of storage was not started.
    */
   public OSessionStoragePerformanceStatistic completeGatheringPerformanceStatisticForCurrentThread() {
-    try {
-      return performanceStatisticManager.stopThreadMonitoring();
-    } catch (RuntimeException ee) {
-      throw logAndPrepareForRethrow(ee);
-    } catch (Error ee) {
-      throw logAndPrepareForRethrow(ee);
-    } catch (Throwable t) {
-      throw logAndPrepareForRethrow(t);
-    }
+    return null;
   }
 
   @Override
@@ -2387,7 +2345,7 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
         engine.create(valueSerializer, isAutomatic, keyTypes, nullValuesSupport, keySerializer, keySize, clustersToIndex,
             engineProperties, metadata, encryption);
 
-        if(writeAheadLog != null) {
+        if (writeAheadLog != null) {
           writeAheadLog.flush();
         }
 
@@ -4121,39 +4079,31 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
   }
 
   protected void makeFullCheckpoint() {
-    final OSessionStoragePerformanceStatistic statistic = performanceStatisticManager.getSessionPerformanceStatistic();
-    if (statistic != null)
-      statistic.startFullCheckpointTimer();
+    if (writeAheadLog == null)
+      return;
+
     try {
-      if (writeAheadLog == null)
-        return;
+      writeAheadLog.flush();
 
-      try {
-        writeAheadLog.flush();
+      //so we will be able to cut almost all the log
+      writeAheadLog.appendNewSegment();
 
-        //so we will be able to cut almost all the log
-        writeAheadLog.appendNewSegment();
+      final OLogSequenceNumber lastLSN = writeAheadLog.logFullCheckpointStart();
+      writeCache.flush();
+      writeAheadLog.logFullCheckpointEnd();
+      writeAheadLog.flush();
 
-        final OLogSequenceNumber lastLSN = writeAheadLog.logFullCheckpointStart();
-        writeCache.flush();
-        writeAheadLog.logFullCheckpointEnd();
-        writeAheadLog.flush();
+      writeAheadLog.cutTill(lastLSN);
 
-        writeAheadLog.cutTill(lastLSN);
-
-        if (jvmError.get() == null) {
-          clearStorageDirty();
-        }
-
-      } catch (IOException ioe) {
-        throw OException.wrapException(new OStorageException("Error during checkpoint creation for storage " + name), ioe);
+      if (jvmError.get() == null) {
+        clearStorageDirty();
       }
 
-      fullCheckpointCount.increment();
-    } finally {
-      if (statistic != null)
-        statistic.stopFullCheckpointTimer();
+    } catch (IOException ioe) {
+      throw OException.wrapException(new OStorageException("Error during checkpoint creation for storage " + name), ioe);
     }
+
+    fullCheckpointCount.increment();
   }
 
   public long getFullCheckpointCount() {
@@ -4713,7 +4663,7 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
     if (cluster != null) {
       cluster.create(-1);
 
-      if(writeAheadLog != null) {
+      if (writeAheadLog != null) {
         writeAheadLog.flush();
       }
 
@@ -4809,20 +4759,7 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
           }
         }
 
-        try {
-          performanceStatisticManager.unregisterMBean(name, id);
-        } catch (Exception e) {
-          OLogManager.instance().error(this, "MBean for write cache cannot be unregistered", e);
-        }
-
         postCloseSteps(onDelete, jvmError.get() != null);
-
-        if (atomicOperationsManager != null)
-          try {
-            atomicOperationsManager.unregisterMBean();
-          } catch (Exception e) {
-            OLogManager.instance().error(this, "MBean for atomic operations manager cannot be unregistered", e);
-          }
 
         transaction = null;
       } else {

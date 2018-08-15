@@ -126,7 +126,7 @@ public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
    *
    * @throws ODirectMemoryAllocationFailedException if it is impossible to allocate amount of direct memory of given size
    */
-  public OPointer allocate(int size, int align) {
+  public OPointer allocate(int size, int align, boolean lockMemory) {
     if (size <= 0) {
       throw new IllegalArgumentException("Size of allocated memory can not be less or equal to 0");
     }
@@ -138,8 +138,12 @@ public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
         throw new ODirectMemoryAllocationFailedException("Can not allocate direct memory chunk of size " + size);
       }
 
-      ptr = new OPointer(new Pointer(pointer), size);
-      memoryConsumption.add(size);
+      final Pointer jnaPointer = new Pointer(pointer);
+      if (lockMemory && isLinux) {
+        ONative.instance().mlock(jnaPointer, size);
+      }
+
+      ptr = new OPointer(jnaPointer, size);
     } else {
       if (!isLinux) {
         throw new ODirectMemoryAllocationFailedException("Alignment of pointers is allowed only on Linux platforms.");
@@ -147,9 +151,16 @@ public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
 
       final PointerByReference pointerByReference = new PointerByReference();
       ONative.instance().posix_memalign(pointerByReference, new NativeLong(align), new NativeLong(size));
-      ptr = new OPointer(pointerByReference.getValue(), size);
+
+      final Pointer jnaPointer = pointerByReference.getValue();
+      if (lockMemory) {
+        ONative.instance().mlock(jnaPointer, size);
+      }
+
+      ptr = new OPointer(jnaPointer, size);
     }
 
+    memoryConsumption.add(size);
     return track(ptr);
   }
 
@@ -301,7 +312,8 @@ public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
   }
 
   /**
-   * WeakReference to the direct memory pointer which tracks stack trace of allocation of direct memory associated with this pointer.
+   * WeakReference to the direct memory pointer which tracks stack trace of allocation of direct memory associated with this
+   * pointer.
    */
   private static class TrackedPointerReference extends WeakReference<OPointer> {
 

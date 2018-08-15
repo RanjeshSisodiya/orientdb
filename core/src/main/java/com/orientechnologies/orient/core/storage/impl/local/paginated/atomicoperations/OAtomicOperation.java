@@ -33,7 +33,6 @@ import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSe
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OOperationUnitId;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OUpdatePageRecord;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWriteAheadLog;
-import com.orientechnologies.orient.core.storage.impl.local.statistic.OPerformanceStatisticManager;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -69,16 +68,13 @@ public class OAtomicOperation {
   private final OReadCache  readCache;
   private final OWriteCache writeCache;
 
-  private final OPerformanceStatisticManager performanceStatisticManager;
-
   private final Map<String, OAtomicOperationMetadata<?>> metadata = new LinkedHashMap<>();
 
   public OAtomicOperation(OLogSequenceNumber startLSN, OOperationUnitId operationUnitId, OReadCache readCache,
-      OWriteCache writeCache, int storageId, OPerformanceStatisticManager performanceStatisticManager) {
+      OWriteCache writeCache, int storageId) {
     this.storageId = storageId;
     this.startLSN = startLSN;
     this.operationUnitId = operationUnitId;
-    this.performanceStatisticManager = performanceStatisticManager;
     startCounter = 1;
     this.readCache = readCache;
     this.writeCache = writeCache;
