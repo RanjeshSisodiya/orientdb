@@ -139,9 +139,6 @@ public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
       }
 
       final Pointer jnaPointer = new Pointer(pointer);
-      if (lockMemory && isLinux) {
-        ONative.instance().mlock(jnaPointer, size);
-      }
 
       ptr = new OPointer(jnaPointer, size);
     } else {
@@ -153,9 +150,6 @@ public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
       ONative.instance().posix_memalign(pointerByReference, new NativeLong(align), new NativeLong(size));
 
       final Pointer jnaPointer = pointerByReference.getValue();
-      if (lockMemory) {
-        ONative.instance().mlock(jnaPointer, size);
-      }
 
       ptr = new OPointer(jnaPointer, size);
     }

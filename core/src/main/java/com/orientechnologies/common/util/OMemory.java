@@ -164,7 +164,7 @@ public class OMemory {
         final long xmxBytes = extractMemoryLimitInBytes(xmx);
 
         if (xmsBytes == xmxBytes) {
-          ONative.instance().mlockall(ONative.MCL_CURRENT);
+          ONative.instance().mlockall(ONative.MCL_FUTURE);
           OLogManager.instance()
               .infoNoDb(OMemory.class, "Memory currently allocated by process is locked and can not be swapped to the disk.");
         } else {
