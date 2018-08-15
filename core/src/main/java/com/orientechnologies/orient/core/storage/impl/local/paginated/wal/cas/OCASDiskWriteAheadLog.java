@@ -205,7 +205,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
       thread.setUncaughtExceptionHandler(new OUncaughtExceptionHandler());
       return thread;
     });
-    this.memoryLock = memoryLock;
+    this.memoryLock = false;
 
     writeExecutor = new OThreadPoolExecutorWithLogging(1, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), r -> {
       final Thread thread = new Thread(OStorageAbstract.storageThreadGroup, r);
