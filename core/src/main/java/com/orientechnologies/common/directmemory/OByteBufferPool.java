@@ -63,7 +63,7 @@ public class OByteBufferPool implements OByteBufferPoolMXBean {
    */
   private final int poolSize;
 
-  private static final int LOCKED_CHUNK_SIZE = 256 * 1024 * 1024; //256M
+  private static final int LOCKED_CHUNK_SIZE = 64 * 1024 * 1024; //64M
 
   private final AtomicReferenceArray<LockedPointerHolder> lockedChuncks    = new AtomicReferenceArray<>(1024);
   private final AtomicInteger                             lockedChunkIndex = new AtomicInteger();
