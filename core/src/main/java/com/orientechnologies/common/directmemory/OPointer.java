@@ -22,7 +22,7 @@ public class OPointer {
     return pointer.getByteBuffer(0, size);
   }
 
-  Pointer getNativePointer() {
+  public Pointer getNativePointer() {
     return pointer;
   }
 

@@ -285,6 +285,10 @@ public class ONative {
     return C_LIBRARY.mlock(pointer, len);
   }
 
+  public int munlock(Pointer pointer, long len) throws LastErrorException {
+    return C_LIBRARY.munlock(pointer, len);
+  }
+
   private long updateMemoryLimit(long memoryLimit, final long newMemoryLimit) {
     if (newMemoryLimit <= 0) {
       return memoryLimit;

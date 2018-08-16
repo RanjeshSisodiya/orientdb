@@ -30,9 +30,6 @@ import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import java.lang.management.ManagementFactory;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
@@ -49,10 +46,6 @@ import java.util.concurrent.atomic.LongAdder;
  * @see OGlobalConfiguration#DIRECT_MEMORY_POOL_LIMIT
  */
 public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
-  /**
-   * Name of JMX bean
-   */
-  private static final String MBEAN_NAME = "com.orientechnologies.common.directmemory:type=ODirectMemoryAllocatorMXBean";
 
   /**
    * Whether we should track memory leaks during application execution
@@ -126,7 +119,7 @@ public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
    *
    * @throws ODirectMemoryAllocationFailedException if it is impossible to allocate amount of direct memory of given size
    */
-  public OPointer allocate(int size, int align, boolean lockMemory) {
+  public OPointer allocate(int size, int align) {
     if (size <= 0) {
       throw new IllegalArgumentException("Size of allocated memory can not be less or equal to 0");
     }
@@ -139,7 +132,6 @@ public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
       }
 
       final Pointer jnaPointer = new Pointer(pointer);
-
       ptr = new OPointer(jnaPointer, size);
     } else {
       if (!isLinux) {
@@ -150,7 +142,6 @@ public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
       ONative.instance().posix_memalign(pointerByReference, new NativeLong(align), new NativeLong(size));
 
       final Pointer jnaPointer = pointerByReference.getValue();
-
       ptr = new OPointer(jnaPointer, size);
     }
 
@@ -239,44 +230,6 @@ public class ODirectMemoryAllocator implements ODirectMemoryAllocatorMXBean {
     }
 
     assert !leaked;
-  }
-
-  /**
-   * Registers the MBean for this byte buffer pool.
-   *
-   * @see OByteBufferPoolMXBean
-   */
-  public void registerMBean() {
-    try {
-      final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-      final ObjectName mbeanName = new ObjectName(MBEAN_NAME);
-
-      if (!server.isRegistered(mbeanName)) {
-        server.registerMBean(this, mbeanName);
-      } else {
-        OLogManager.instance().warnNoDb(this,
-            "MBean with name %s has already registered. Probably your system was not shutdown correctly"
-                + " or you have several running applications which use OrientDB engine inside", mbeanName.getCanonicalName());
-      }
-
-    } catch (Exception e) {
-      OLogManager.instance().errorNoDb(this, "Error during MBean registration", e);
-    }
-  }
-
-  /**
-   * Unregisters the MBean for this byte buffer pool.
-   *
-   * @see OByteBufferPoolMXBean
-   */
-  public void unregisterMBean() {
-    try {
-      final MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-      final ObjectName mbeanName = new ObjectName(MBEAN_NAME);
-      server.unregisterMBean(mbeanName);
-    } catch (Exception e) {
-      OLogManager.instance().errorNoDb(this, "Error during MBean de-registration", e);
-    }
   }
 
   /**
