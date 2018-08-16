@@ -63,7 +63,7 @@ public class OByteBufferPool implements OByteBufferPoolMXBean {
    */
   private final int poolSize;
 
-  private static final int LOCKED_CHUNK_SIZE = 64 * 1024 * 1024; //64M
+  private static final int LOCKED_CHUNK_SIZE = 256 * 1024 * 1024; //64M
 
   private final AtomicReferenceArray<LockedPointerHolder> lockedChuncks    = new AtomicReferenceArray<>(1024);
   private final AtomicInteger                             lockedChunkIndex = new AtomicInteger();
@@ -167,7 +167,7 @@ public class OByteBufferPool implements OByteBufferPoolMXBean {
       pointer = lockedPointersPool.poll();
 
       while (pointer == null) {
-        final int lockedIndex = lockedChunkIndex.get();
+        int lockedIndex = lockedChunkIndex.get();
         LockedPointerHolder pointerHolder;
 
         if (lockedIndex >= lockedChuncks.length()) {
@@ -180,11 +180,8 @@ public class OByteBufferPool implements OByteBufferPoolMXBean {
           pointerHolder = new LockedPointerHolder(LOCKED_CHUNK_SIZE);
 
           if (lockedChuncks.compareAndSet(lockedIndex, null, pointerHolder)) {
-            lockedChunkIndex.compareAndSet(lockedIndex, lockedIndex + 1);
-
             final OPointer chunkPointer = allocator.allocate(LOCKED_CHUNK_SIZE, osPageSize);
             ONative.instance().mlock(chunkPointer.getNativePointer(), LOCKED_CHUNK_SIZE);
-
             pointerHolder.initPointer(chunkPointer);
           } else {
             continue;
@@ -201,6 +198,11 @@ public class OByteBufferPool implements OByteBufferPoolMXBean {
           } catch (InterruptedException e) {
             throw OException.wrapException(new OInterruptedException("Waiting for direct memory allocation was interrupted"), e);
           }
+        }
+
+        //no space left in current locked pointer holder
+        if (pointer == null) {
+          lockedChunkIndex.compareAndSet(lockedIndex, lockedIndex + 1);
         }
       }
     } else {
