@@ -140,6 +140,13 @@ public class OMemory {
   public static void lockMemory() {
     if (OGlobalConfiguration.MEMORY_LOCK.getValueAsBoolean()) {
       if (Platform.isLinux()) {
+        if (!ONative.instance().isUnlimitedMemoryLocking()) {
+          OLogManager.instance().warnNoDb(OMemory.class,
+              "To allow preventing OrientDB buffers from swapping you should set unlimited soft limit for current user.");
+          OGlobalConfiguration.MEMORY_LOCK.setValue(false);
+          return;
+        }
+
         final RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         final List<String> inputArgs = runtimeMXBean.getInputArguments();
 
@@ -174,7 +181,8 @@ public class OMemory {
         }
       } else {
         OLogManager.instance().infoNoDb(OEngineLocalPaginated.class,
-            "Can not prevent memory from swapping, this feature is supported only for OS Linux");
+            "Can not prevent OrientDB buffers from swapping, this feature is supported only for OS Linux");
+        OGlobalConfiguration.MEMORY_LOCK.setValue(false);
       }
     }
   }

@@ -233,6 +233,18 @@ public class ONative {
     return new MemoryLimitResult(memoryLimit, insideContainer);
   }
 
+  public boolean isUnlimitedMemoryLocking() {
+    final OCLibrary.Rlimit rlimit = new OCLibrary.Rlimit();
+    final int result = C_LIBRARY.getrlimit(OCLibrary.RLIMIT_AS, rlimit);
+    if (result != 0) {
+      return false;
+    }
+
+    System.out.println("Memory lock limit for the process " + rlimit.rlim_cur);
+
+    return false;
+  }
+
   public int open(String path, int flags) throws LastErrorException {
     return C_LIBRARY.open(path, flags, 0000400 | 0000200);//rw mask
   }
