@@ -170,8 +170,14 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
 
   private long currentPosition = 0;
 
-  private ByteBuffer         writeBuffer          = null;
-  private OPointer           writeBufferPointer   = null;
+  private ByteBuffer writeBuffer;
+
+  private ByteBuffer writeBufferOne        = null;
+  private OPointer   writeBufferPointerOne = null;
+
+  private ByteBuffer writeBufferTwo        = null;
+  private OPointer   writeBufferPointerTwo = null;
+
   private int                writeBufferPageIndex = -1;
   private OLogSequenceNumber lastLSN              = null;
   private OLogSequenceNumber checkPointLSN        = null;
@@ -1429,17 +1435,27 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
     segments.clear();
     fileCloseQueue.clear();
 
-    if (writeBufferPointer != null) {
+    if (writeBufferPointerOne != null) {
       if (memoryLock) {
-        ONative.instance().munlock(writeBufferPointer.getNativePointer(), BUFFER_SIZE);
+        ONative.instance().munlock(writeBufferPointerOne.getNativePointer(), BUFFER_SIZE);
       }
 
-      allocator.deallocate(writeBufferPointer);
+      allocator.deallocate(writeBufferPointerOne);
 
-      writeBuffer = null;
-      writeBufferPageIndex = -1;
+      writeBufferOne = null;
     }
 
+    if (writeBufferPointerTwo != null) {
+      if (memoryLock) {
+        ONative.instance().munlock(writeBufferPointerTwo.getNativePointer(), BUFFER_SIZE);
+      }
+
+      allocator.deallocate(writeBufferPointerTwo);
+
+      writeBufferTwo = null;
+    }
+
+    writeBufferPageIndex = -1;
     if (recordsWriterFuture.isDone()) {
       try {
         recordsWriterFuture.get();
@@ -1838,12 +1854,12 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
               } else {
                 if (segmentId != lsn.getSegment()) {
                   if (walFile != null) {
-                    if (writeBufferPointer != null) {
-                      writeBuffer(walFile, writeBuffer, writeBufferPointer, lastLSN, checkPointLSN);
+                    if (writeBufferPageIndex >= 0) {
+                      writeBuffer(walFile, writeBuffer, lastLSN, checkPointLSN);
+
+                      switchWriteBuffer();
                     }
 
-                    writeBufferPointer = null;
-                    writeBuffer = null;
                     writeBufferPageIndex = -1;
 
                     checkPointLSN = null;
@@ -1887,17 +1903,27 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
 
                   while (written < bytesToWrite) {
                     if (writeBuffer == null || writeBuffer.remaining() == 0) {
-                      if (writeBufferPointer != null) {
-                        writeBuffer(walFile, writeBuffer, writeBufferPointer, lastLSN, checkPointLSN);
+                      if (writeBufferPageIndex >= 0) {
+                        writeBuffer(walFile, writeBuffer, lastLSN, checkPointLSN);
+
+                        switchWriteBuffer();
+                      } else if (writeBuffer == null) {
+                        if (writeBufferOne == null) {
+                          assert writeBufferPointerOne == null;
+
+                          writeBufferPointerOne = allocator.allocate(BUFFER_SIZE, blockSize);
+                          if (memoryLock) {
+                            ONative.instance().mlock(writeBufferPointerOne.getNativePointer(), BUFFER_SIZE);
+                          }
+
+                          writeBufferOne = writeBufferPointerOne.getNativeByteBuffer();
+                          writeBuffer = writeBufferOne;
+                        } else {
+                          writeBuffer = writeBufferOne;
+                          assert writeBuffer.position() == 0;
+                        }
                       }
 
-                      writeBufferPointer = allocator.allocate(BUFFER_SIZE, blockSize);
-
-                      if (memoryLock) {
-                        ONative.instance().mlock(writeBufferPointer.getNativePointer(), BUFFER_SIZE);
-                      }
-
-                      writeBuffer = writeBufferPointer.getNativeByteBuffer().order(ByteOrder.nativeOrder());
                       writeBufferPageIndex = -1;
 
                       checkPointLSN = null;
@@ -1970,11 +1996,11 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
               }
             }
 
-            if ((makeFSync || fullWrite) && writeBufferPointer != null) {
-              writeBuffer(walFile, writeBuffer, writeBufferPointer, lastLSN, checkPointLSN);
+            if ((makeFSync || fullWrite) && writeBufferPageIndex >= 0) {
+              writeBuffer(walFile, writeBuffer, lastLSN, checkPointLSN);
 
-              writeBufferPointer = null;
-              writeBuffer = null;
+              switchWriteBuffer();
+
               writeBufferPageIndex = -1;
 
               checkPointLSN = null;
@@ -2075,15 +2101,46 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
       }
     }
 
-    private void writeBuffer(final OWALFile file, final ByteBuffer buffer, final OPointer pointer, final OLogSequenceNumber lastLSN,
+    private void switchWriteBuffer() {
+      if (writeBuffer == writeBufferOne) {
+        if (writeBufferTwo == null) {
+
+          assert writeBufferPointerTwo == null;
+          writeBufferPointerTwo = allocator.allocate(BUFFER_SIZE, blockSize);
+          if (memoryLock) {
+            ONative.instance().mlock(writeBufferPointerTwo.getNativePointer(), BUFFER_SIZE);
+          }
+
+          writeBufferTwo = writeBufferPointerTwo.getNativeByteBuffer();
+          writeBuffer = writeBufferTwo;
+        } else {
+          writeBuffer = writeBufferTwo;
+          writeBuffer.rewind();
+        }
+      } else {
+        assert writeBuffer == writeBufferTwo;
+
+        if (writeBufferOne == null) {
+          assert writeBufferPointerOne == null;
+
+          writeBufferPointerOne = allocator.allocate(BUFFER_SIZE, blockSize);
+          if (memoryLock) {
+            ONative.instance().mlock(writeBufferPointerOne.getNativePointer(), BUFFER_SIZE);
+          }
+
+          writeBufferOne = writeBufferPointerOne.getNativeByteBuffer();
+          writeBuffer = writeBufferOne;
+        } else {
+          writeBuffer = writeBufferOne;
+          writeBuffer.rewind();
+        }
+      }
+    }
+
+    private void writeBuffer(final OWALFile file, final ByteBuffer buffer, final OLogSequenceNumber lastLSN,
         final OLogSequenceNumber checkpointLSN) throws IOException {
 
       if (buffer.position() <= OCASWALPage.RECORDS_OFFSET) {
-        if (memoryLock) {
-          ONative.instance().munlock(pointer.getNativePointer(), BUFFER_SIZE);
-        }
-
-        allocator.deallocate(pointer);
         return;
       }
 
@@ -2190,12 +2247,6 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
         } catch (final IOException e) {
           OLogManager.instance().errorNoDb(this, "Error during WAL data write", e);
           throw e;
-        } finally {
-          if (memoryLock) {
-            ONative.instance().munlock(pointer.getNativePointer(), BUFFER_SIZE);
-          }
-
-          allocator.deallocate(pointer);
         }
 
         return null;
