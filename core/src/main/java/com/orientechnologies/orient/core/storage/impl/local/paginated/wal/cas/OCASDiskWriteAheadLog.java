@@ -634,7 +634,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
         assert writtenLSN != null;
 
         if (writtenLSN.compareTo(lsn) < 0) {
-          doFlush(false);
+          doFlush(false, true);
           waitTillWriteWillBeFinished();
         }
 
@@ -900,7 +900,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
         assert writtenLSN != null;
 
         if (writtenLSN.compareTo(lsn) <= 0) {
-          doFlush(false);
+          doFlush(false, true);
 
           waitTillWriteWillBeFinished();
         }
@@ -1098,7 +1098,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
         if (printPerformanceStatistic) {
           startTs = System.nanoTime();
         }
-        doFlush(false);
+        doFlush(false, false);
         if (printPerformanceStatistic) {
           final long endTs = System.nanoTime();
           threadsWaitingSum.add(endTs - startTs);
@@ -1360,7 +1360,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
   }
 
   public void flush() {
-    doFlush(true);
+    doFlush(true, true);
     waitTillWriteWillBeFinished();
   }
 
@@ -1370,7 +1370,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
 
   public void close(final boolean flush) throws IOException {
     if (flush) {
-      doFlush(true);
+      doFlush(true, true);
     }
 
     commitExecutor.shutdown();
@@ -1525,8 +1525,8 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
     segmentOverflowListeners.add(listener);
   }
 
-  private void doFlush(final boolean forceSync) {
-    final Future<?> future = commitExecutor.submit(new RecordsWriter(forceSync, true));
+  private void doFlush(final boolean forceSync, final boolean fullWrite) {
+    final Future<?> future = commitExecutor.submit(new RecordsWriter(forceSync, fullWrite));
     try {
       future.get();
     } catch (final Exception e) {
