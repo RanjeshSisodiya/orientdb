@@ -113,7 +113,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
   private final AtomicLong logSize     = new AtomicLong();
   private final AtomicLong queueSize   = new AtomicLong();
 
-  private final int maxCacheSize;
+  private final long maxCacheSize;
 
   private final AtomicReference<OLogSequenceNumber> end      = new AtomicReference<>();
   private final ConcurrentSkipListSet<Long>         segments = new ConcurrentSkipListSet<>();
@@ -267,7 +267,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
 
     OLogManager.instance().infoNoDb(this, "Page size for WAL located in %s is set to %d bytes.", walLocation.toString(), pageSize);
 
-    this.maxCacheSize = maxPagesCacheSize * pageSize;
+    this.maxCacheSize = (long) maxPagesCacheSize * pageSize;
 
     masterRecordPath = walLocation.resolve(storageName + MASTER_RECORD_EXTENSION);
     masterRecordLSNHolder = FileChannel
