@@ -1098,7 +1098,7 @@ public final class OCASDiskWriteAheadLog implements OWriteAheadLog {
         if (printPerformanceStatistic) {
           startTs = System.nanoTime();
         }
-        doFlush(false, true);
+        doFlush(false, false);
         if (printPerformanceStatistic) {
           final long endTs = System.nanoTime();
           threadsWaitingSum.add(endTs - startTs);
