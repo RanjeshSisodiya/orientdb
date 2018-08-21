@@ -66,13 +66,8 @@ public final class OWALRecordsFactory {
     final long pointer;
     final ByteBuffer content;
 
-    if (contentSize >= MIN_COMPRESSED_RECORD_SIZE) {
-      pointer = Native.malloc(contentSize);
-      content = new Pointer(pointer).getByteBuffer(0, contentSize);
-    } else {
-      content = ByteBuffer.allocate(contentSize).order(ByteOrder.nativeOrder());
-      pointer = -1;
-    }
+    pointer = Native.malloc(contentSize);
+    content = new Pointer(pointer).getByteBuffer(0, contentSize);
 
     final byte recordId = walRecord.getId();
     content.put(recordId);
@@ -94,9 +89,7 @@ public final class OWALRecordsFactory {
     final int compressedLength = compressor.compress(content, 1, contentSize - 1, compressedContent, 5, maxCompressedLength);
 
     if (compressedLength + 5 < contentSize) {
-      if (pointer > 0) {
-        Native.free(pointer);
-      }
+      Native.free(pointer);
 
       compressedContent.limit(compressedLength + 5);
       compressedContent.put(0, (byte) (-(recordId + 1)));
