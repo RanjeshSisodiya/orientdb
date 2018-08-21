@@ -5,6 +5,10 @@ import com.orientechnologies.orient.core.storage.cache.OCachePointer;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSequenceNumber;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChanges;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALPageChangesPortion;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by tglman on 23/06/16.
@@ -17,7 +21,11 @@ public class OCacheEntryChanges implements OCacheEntry {
   boolean isNew   = false;
   boolean pinPage = false;
 
+  byte walPageId;
+
+  List<OPageOperation> pageOperations = new ArrayList<>();
   private OLogSequenceNumber changeLSN;
+  byte[] page;
 
   public OCacheEntryChanges(OCacheEntry entry) {
     delegate = entry;
@@ -128,6 +136,20 @@ public class OCacheEntryChanges implements OCacheEntry {
   @Override
   public void setEndLSN(OLogSequenceNumber endLSN) {
     delegate.setEndLSN(endLSN);
+  }
+
+  @Override
+  public List<OPageOperation> getPageOperations() {
+    return pageOperations;
+  }
+
+  @Override
+  public void setWalId(byte walId) {
+    if (walId < 0) {
+      throw new IllegalStateException("Invalid value of WAL page id " + walId);
+    }
+
+    this.walPageId = walId;
   }
 
   OLogSequenceNumber getChangeLSN() {

@@ -2,7 +2,9 @@ package com.orientechnologies.orient.core.storage.cache;
 
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSequenceNumber;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChanges;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -13,7 +15,7 @@ public class OCacheEntryImpl implements OCacheEntry {
   private final long          fileId;
   private final long          pageIndex;
 
-  private boolean dirty;
+  private       boolean       dirty;
   private final AtomicInteger usagesCount = new AtomicInteger();
 
   public OCacheEntryImpl(long fileId, long pageIndex, OCachePointer dataPointer, boolean dirty) {
@@ -122,6 +124,15 @@ public class OCacheEntryImpl implements OCacheEntry {
   @Override
   public void setEndLSN(OLogSequenceNumber endLSN) {
     dataPointer.setEndLSN(endLSN);
+  }
+
+  @Override
+  public List<OPageOperation> getPageOperations() {
+    return null;
+  }
+
+  @Override
+  public void setWalId(byte walId) {
   }
 
   @Override

@@ -29,8 +29,10 @@ import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.cache.OCachePointer;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSequenceNumber;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChanges;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 /**
  * Base page class for all durable data structures, that is data structures state of which can be consistently restored after system
@@ -51,7 +53,6 @@ import java.nio.ByteBuffer;
  * @since 16.08.13
  */
 public class ODurablePage {
-
   public static final    int MAGIC_NUMBER_OFFSET = 0;
   protected static final int CRC32_OFFSET        = MAGIC_NUMBER_OFFSET + OLongSerializer.LONG_SIZE;
 
@@ -61,23 +62,30 @@ public class ODurablePage {
 
   public static final int NEXT_FREE_POSITION = WAL_POSITION_OFFSET + OLongSerializer.LONG_SIZE;
 
-  private OWALChanges changes;
+  private final OWALChanges changes;
 
   private final OCacheEntry cacheEntry;
 
   private final OCachePointer pointer;
 
+  private final List<OPageOperation> pageOperations;
+
   public ODurablePage(OCacheEntry cacheEntry) {
-    assert cacheEntry != null || changes != null;
+    assert cacheEntry != null;
 
     this.cacheEntry = cacheEntry;
 
-    if (cacheEntry != null) {
-      this.pointer = cacheEntry.getCachePointer();
-      this.changes = cacheEntry.getChanges();
-    } else
-      this.pointer = null;
+    this.pointer = cacheEntry.getCachePointer();
+    this.changes = cacheEntry.getChanges();
+    this.pageOperations = cacheEntry.getPageOperations();
 
+    cacheEntry.setWalId(getWalId());
+  }
+
+  protected void addPageOperation(final OPageOperation pageOperation) {
+    if (pageOperations != null) {
+      pageOperations.add(pageOperation);
+    }
   }
 
   public static OLogSequenceNumber getLogSequenceNumberFromPage(ByteBuffer buffer) {
@@ -123,7 +131,6 @@ public class ODurablePage {
   protected int getIntValue(int pageOffset) {
     assert cacheEntry.getCachePointer().getBuffer() == null || cacheEntry.isLockAcquiredByCurrentThread();
 
-
     if (changes == null) {
       final ByteBuffer buffer = pointer.getBuffer();
       return buffer.getInt(pageOffset);
@@ -134,7 +141,6 @@ public class ODurablePage {
 
   protected long getLongValue(int pageOffset) {
     assert cacheEntry.getCachePointer().getBuffer() == null || cacheEntry.isLockAcquiredByCurrentThread();
-
 
     if (changes == null) {
       final ByteBuffer buffer = pointer.getBuffer();
@@ -304,6 +310,10 @@ public class ODurablePage {
     buffer.putLong(lsn.getPosition());
 
     cacheEntry.markDirty();
+  }
+
+  public byte getWalId() {
+    return -1;
   }
 
   @Override

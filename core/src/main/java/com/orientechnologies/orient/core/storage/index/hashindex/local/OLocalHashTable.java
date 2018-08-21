@@ -15,6 +15,7 @@ import com.orientechnologies.orient.core.serialization.serializer.binary.OBinary
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurableComponent;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -290,7 +291,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       acquireSharedLock();
       try {
-        final OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        final OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         checkNullSupport(key);
         if (key == null) {
@@ -512,7 +513,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       acquireSharedLock();
       try {
-        final OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        final OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         key = keySerializer.preprocess(key, (Object[]) keyTypes);
 
@@ -586,7 +587,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
       this.encryption = encryption;
       this.nullKeyIsSupported = nullKeyIsSupported;
 
-      OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+      OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
       fileStateId = openFile(atomicOperation, name + metadataConfigurationFileExtension);
       final OCacheEntry hashStateEntry = loadPageForRead(atomicOperation, fileStateId, 0, true);
@@ -783,7 +784,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         key = keySerializer.preprocess(key, (Object[]) keyTypes);
 
@@ -845,7 +846,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         long bucketPointer = directory.getNodePointer(bucketPath.nodeIndex, bucketPath.itemIndex);
 
         long pageIndex = getPageIndex(bucketPointer);
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         OCacheEntry cacheEntry = loadPageForRead(atomicOperation, fileId, pageIndex, false);
         try {
@@ -886,7 +887,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         OHashTable.BucketPath bucketPath = getBucket(HASH_CODE_MAX_VALUE);
         long bucketPointer = directory.getNodePointer(bucketPath.nodeIndex, bucketPath.itemIndex + bucketPath.hashMapOffset);
@@ -943,7 +944,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
         long bucketPointer = directory.getNodePointer(bucketPath.nodeIndex, bucketPath.itemIndex + bucketPath.hashMapOffset);
 
         long pageIndex = getPageIndex(bucketPointer);
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         OCacheEntry cacheEntry = loadPageForRead(atomicOperation, fileId, pageIndex, false);
         try {
@@ -996,7 +997,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
         key = keySerializer.preprocess(key, (Object[]) keyTypes);
 
         final long hashCode = keyHashFunction.hashCode(key);
@@ -1152,7 +1153,7 @@ public class OLocalHashTable<K, V> extends ODurableComponent implements OHashTab
     try {
       acquireSharedLock();
       try {
-        final OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        final OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
         final OCacheEntry hashStateEntry = loadPageForRead(atomicOperation, fileStateId, hashStateEntryIndex, true);
         try {
           OHashIndexFileLevelMetadataPage metadataPage = new OHashIndexFileLevelMetadataPage(hashStateEntry, false);

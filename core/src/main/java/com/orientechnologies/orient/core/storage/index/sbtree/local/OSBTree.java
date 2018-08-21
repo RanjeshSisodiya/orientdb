@@ -40,6 +40,7 @@ import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurableComponent;
 
 import java.io.IOException;
@@ -185,7 +186,7 @@ public class OSBTree<K, V> extends ODurableComponent {
       try {
         checkNullSupport(key);
 
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
         if (key != null) {
           key = keySerializer.preprocess(key, (Object[]) keyTypes);
 
@@ -335,7 +336,7 @@ public class OSBTree<K, V> extends ODurableComponent {
           if (bucketSearchResult.itemIndex >= 0) {
 
             if (oldRawValue.length == serializeValue.length) {
-              keyBucket.updateValue(bucketSearchResult.itemIndex, serializeValue, oldRawValue);
+              keyBucket.updateValue(bucketSearchResult.itemIndex, serializeValue);
               releasePageFromWrite(atomicOperation, keyBucketCacheEntry);
 
               endAtomicOperation(false, null);
@@ -577,7 +578,7 @@ public class OSBTree<K, V> extends ODurableComponent {
       this.encryption = encryption;
       this.nullPointerSupport = nullPointerSupport;
 
-      final OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+      final OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
       fileId = openFile(atomicOperation, getFullName());
       if (nullPointerSupport)
@@ -597,7 +598,7 @@ public class OSBTree<K, V> extends ODurableComponent {
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         OCacheEntry rootCacheEntry = loadPageForRead(atomicOperation, fileId, ROOT_INDEX, false);
         try {
@@ -705,7 +706,7 @@ public class OSBTree<K, V> extends ODurableComponent {
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         if (!ascSortOrder)
           return iterateEntriesMinorDesc(key, inclusive, atomicOperation);
@@ -727,7 +728,7 @@ public class OSBTree<K, V> extends ODurableComponent {
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         if (ascSortOrder)
           return iterateEntriesMajorAsc(key, inclusive, atomicOperation);
@@ -749,7 +750,7 @@ public class OSBTree<K, V> extends ODurableComponent {
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         final BucketSearchResult searchResult = firstItem(atomicOperation);
         if (searchResult == null)
@@ -777,7 +778,7 @@ public class OSBTree<K, V> extends ODurableComponent {
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         final BucketSearchResult searchResult = lastItem(atomicOperation);
         if (searchResult == null)
@@ -805,7 +806,7 @@ public class OSBTree<K, V> extends ODurableComponent {
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
         final BucketSearchResult searchResult = firstItem(atomicOperation);
         if (searchResult == null)
           return new OSBTreeKeyCursor<K>() {
@@ -832,7 +833,7 @@ public class OSBTree<K, V> extends ODurableComponent {
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
         if (ascSortOrder)
           return iterateEntriesBetweenAscOrder(keyFrom, fromInclusive, keyTo, toInclusive, atomicOperation);
         else
@@ -1776,7 +1777,7 @@ public class OSBTree<K, V> extends ODurableComponent {
       try {
         acquireSharedLock();
         try {
-          OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+          OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
           while (keysCache.size() < prefetchSize) {
             if (pageIndex == -1)
@@ -1880,7 +1881,7 @@ public class OSBTree<K, V> extends ODurableComponent {
       try {
         acquireSharedLock();
         try {
-          OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+          OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
           final BucketSearchResult bucketSearchResult;
 
@@ -2014,7 +2015,7 @@ public class OSBTree<K, V> extends ODurableComponent {
       try {
         acquireSharedLock();
         try {
-          final OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+          final OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
           final BucketSearchResult bucketSearchResult;
 

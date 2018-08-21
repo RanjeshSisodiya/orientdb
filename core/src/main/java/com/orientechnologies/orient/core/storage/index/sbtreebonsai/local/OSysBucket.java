@@ -23,6 +23,11 @@ package com.orientechnologies.orient.core.storage.index.sbtreebonsai.local;
 import com.orientechnologies.common.serialization.types.OByteSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.sysbucket.OSysBucketInitPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.sysbucket.OSysBucketSetFreeListHeadPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.sysbucket.OSysBucketSetFreeListLengthPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.sysbucket.OSysBucketSetFreeSpacePointer;
 
 import java.io.IOException;
 
@@ -52,7 +57,7 @@ public class OSysBucket extends OBonsaiBucketAbstract {
    */
   private static final byte SYS_MAGIC               = (byte) 41;
 
-  public OSysBucket(OCacheEntry cacheEntry) {
+  OSysBucket(OCacheEntry cacheEntry) {
     super(cacheEntry);
   }
 
@@ -61,33 +66,46 @@ public class OSysBucket extends OBonsaiBucketAbstract {
     setBucketPointer(FREE_SPACE_OFFSET, new OBonsaiBucketPointer(0, OSBTreeBonsaiBucket.MAX_BUCKET_SIZE_BYTES));
     setBucketPointer(FREE_LIST_HEAD_OFFSET, OBonsaiBucketPointer.NULL);
     setLongValue(FREE_LIST_LENGTH_OFFSET, 0L);
+
+    addPageOperation(new OSysBucketInitPageOperation());
   }
 
   public boolean isInitialized() {
     return getByteValue(SYS_MAGIC_OFFSET) != 41;
   }
 
-  public long freeListLength() {
+  long freeListLength() {
     return getLongValue(FREE_LIST_LENGTH_OFFSET);
   }
 
-  public void setFreeListLength(long length) throws IOException {
+  void setFreeListLength(long length) throws IOException {
     setLongValue(FREE_LIST_LENGTH_OFFSET, length);
+
+    addPageOperation(new OSysBucketSetFreeListLengthPageOperation(length));
   }
 
-  public OBonsaiBucketPointer getFreeSpacePointer() {
+  OBonsaiBucketPointer getFreeSpacePointer() {
     return getBucketPointer(FREE_SPACE_OFFSET);
   }
 
-  public void setFreeSpacePointer(OBonsaiBucketPointer pointer) throws IOException {
+  void setFreeSpacePointer(OBonsaiBucketPointer pointer) throws IOException {
     setBucketPointer(FREE_SPACE_OFFSET, pointer);
+
+    addPageOperation(new OSysBucketSetFreeSpacePointer(pointer));
   }
 
-  public OBonsaiBucketPointer getFreeListHead() {
+  OBonsaiBucketPointer getFreeListHead() {
     return getBucketPointer(FREE_LIST_HEAD_OFFSET);
   }
 
-  public void setFreeListHead(OBonsaiBucketPointer pointer) throws IOException {
+  void setFreeListHead(OBonsaiBucketPointer pointer) throws IOException {
     setBucketPointer(FREE_LIST_HEAD_OFFSET, pointer);
+
+    addPageOperation(new OSysBucketSetFreeListHeadPageOperation(pointer));
+  }
+
+  @Override
+  public byte getWalId() {
+    return OPageIds.SYS_BONSAI_BUCKET;
   }
 }

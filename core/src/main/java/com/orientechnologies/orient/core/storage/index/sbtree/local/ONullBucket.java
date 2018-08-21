@@ -22,11 +22,12 @@ package com.orientechnologies.orient.core.storage.index.sbtree.local;
 import com.orientechnologies.common.serialization.types.OBinarySerializer;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
-
-import java.io.IOException;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.nullbucket.OSBTreeNullBucketInitPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.nullbucket.OSBTreeNullBucketRemoveValuePageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.nullbucket.OSBTreeNullBucketSetValuePageOperation;
 
 /**
- * 
  * Bucket which is intended to save values stored in sbtree under <code>null</code> key. Bucket has following layout:
  * <ol>
  * <li>First byte is flag which indicates presence of value in bucket</li>
@@ -34,36 +35,39 @@ import java.io.IOException;
  * passed be user.</li>
  * <li>The rest is serialized value whether link or passed in value.</li>
  * </ol>
- * 
+ *
  * @author Andrey Lomakin (a.lomakin-at-orientdb.com)
  * @since 4/15/14
  */
 public class ONullBucket<V> extends ODurablePage {
   private final OBinarySerializer<V> valueSerializer;
 
-  public ONullBucket(OCacheEntry cacheEntry, OBinarySerializer<V> valueSerializer, boolean isNew) {
+  ONullBucket(OCacheEntry cacheEntry, OBinarySerializer<V> valueSerializer, boolean isNew) {
     super(cacheEntry);
     this.valueSerializer = valueSerializer;
 
-    if (isNew)
+    if (isNew) {
       setByteValue(NEXT_FREE_POSITION, (byte) 0);
+      addPageOperation(new OSBTreeNullBucketInitPageOperation());
+    }
   }
 
-  public void setValue(OSBTreeValue<V> value) throws IOException {
+  public void setValue(OSBTreeValue<V> value) {
     setByteValue(NEXT_FREE_POSITION, (byte) 1);
 
     if (value.isLink()) {
-      setByteValue(NEXT_FREE_POSITION + 1, (byte) 0);
-      setLongValue(NEXT_FREE_POSITION + 2, value.getLink());
-    } else {
-      final int valueSize = valueSerializer.getObjectSize(value.getValue());
-
-      final byte[] serializedValue = new byte[valueSize];
-      valueSerializer.serializeNativeObject(value.getValue(), serializedValue, 0);
-
-      setByteValue(NEXT_FREE_POSITION + 1, (byte) 1);
-      setBinaryValue(NEXT_FREE_POSITION + 2, serializedValue);
+      throw new IllegalStateException("Links are not supported in current version of tree index");
     }
+
+    final int valueSize = valueSerializer.getObjectSize(value.getValue());
+
+    final byte[] serializedValue = new byte[valueSize];
+    valueSerializer.serializeNativeObject(value.getValue(), serializedValue, 0);
+
+    setByteValue(NEXT_FREE_POSITION + 1, (byte) 1);
+    setBinaryValue(NEXT_FREE_POSITION + 2, serializedValue);
+
+    addPageOperation(new OSBTreeNullBucketSetValuePageOperation(serializedValue));
   }
 
   public OSBTreeValue<V> getValue() {
@@ -72,12 +76,19 @@ public class ONullBucket<V> extends ODurablePage {
 
     final boolean isLink = getByteValue(NEXT_FREE_POSITION + 1) == 0;
     if (isLink)
-      return new OSBTreeValue<V>(true, getLongValue(NEXT_FREE_POSITION + 2), null);
+      return new OSBTreeValue<>(true, getLongValue(NEXT_FREE_POSITION + 2), null);
 
-    return new OSBTreeValue<V>(false, -1, deserializeFromDirectMemory(valueSerializer, NEXT_FREE_POSITION + 2));
+    return new OSBTreeValue<>(false, -1, deserializeFromDirectMemory(valueSerializer, NEXT_FREE_POSITION + 2));
   }
 
-  public void removeValue() {
+  void removeValue() {
     setByteValue(NEXT_FREE_POSITION, (byte) 0);
+
+    addPageOperation(new OSBTreeNullBucketRemoveValuePageOperation());
+  }
+
+  @Override
+  public byte getWalId() {
+    return OPageIds.SBTREE_NULL_BUCKET;
   }
 }

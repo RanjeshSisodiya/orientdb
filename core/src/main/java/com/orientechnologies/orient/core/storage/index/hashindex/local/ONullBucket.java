@@ -20,11 +20,12 @@
 
 package com.orientechnologies.orient.core.storage.index.hashindex.local;
 
-import java.io.IOException;
-
 import com.orientechnologies.common.serialization.types.OBinarySerializer;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
+
+import java.io.IOException;
 
 /**
  * @author Andrey Lomakin (a.lomakin-at-orientdb.com)
@@ -61,5 +62,10 @@ public class ONullBucket<V> extends ODurablePage {
 
   public void removeValue() {
     setByteValue(NEXT_FREE_POSITION, (byte) 0);
+  }
+
+  @Override
+  public byte getWalId() {
+    return OPageIds.HASH_INDEX_NULL_BUCKET;
   }
 }

@@ -24,6 +24,7 @@ import com.orientechnologies.common.serialization.types.OByteSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
 
 import java.io.IOException;
 
@@ -38,7 +39,7 @@ public class OHashIndexFileLevelMetadataPage extends ODurablePage {
   private final static int VALUE_SERIALIZER_ID_OFFSET = KEY_SERIALIZER_ID_OFFSET + OByteSerializer.BYTE_SIZE;
   private final static int METADATA_ARRAY_OFFSET      = VALUE_SERIALIZER_ID_OFFSET + OByteSerializer.BYTE_SIZE;
 
-  private final static int ITEM_SIZE                  = OByteSerializer.BYTE_SIZE + 3 * OLongSerializer.LONG_SIZE;
+  private final static int ITEM_SIZE = OByteSerializer.BYTE_SIZE + 3 * OLongSerializer.LONG_SIZE;
 
   public OHashIndexFileLevelMetadataPage(OCacheEntry cacheEntry, boolean isNewPage) throws IOException {
     super(cacheEntry);
@@ -147,5 +148,10 @@ public class OHashIndexFileLevelMetadataPage extends ODurablePage {
   public void remove(int index) {
     int offset = METADATA_ARRAY_OFFSET + index * ITEM_SIZE;
     setByteValue(offset, (byte) 0);
+  }
+
+  @Override
+  public byte getWalId() {
+    return OPageIds.HASH_INDEX_FILE_LEVEL_METADATA;
   }
 }

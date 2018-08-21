@@ -70,4 +70,7 @@ public final class WALRecordTypes {
   public static final byte SBTREE_BONSAI_BUCKET_SET_DELETED_OPERATION           = 63;
   public static final byte SBTREE_BONSAI_BUCKET_SET_LEFT_SIBLING_OPERATION      = 64;
   public static final byte SBTREE_BONSAI_BUCKET_SET_RIGHT_SIBLING_OPERATION     = 65;
+
+  public static final byte BACKUP_PAGE_RECORD        = 66;
+  public static final byte PAGE_OPERATIONS_CONTAINER = 67;
 }

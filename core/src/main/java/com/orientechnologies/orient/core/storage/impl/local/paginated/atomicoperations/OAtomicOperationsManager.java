@@ -61,9 +61,6 @@ import java.util.concurrent.locks.LockSupport;
  * @since 12/3/13
  */
 public class OAtomicOperationsManager implements OAtomicOperationsMangerMXBean {
-  @SuppressWarnings("SpellCheckingInspection")
-  private static final String MBEAN_NAME = "com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations:type=OAtomicOperationsMangerMXBean";
-
   private volatile boolean trackAtomicOperations = OGlobalConfiguration.TX_TRACK_ATOMIC_OPERATIONS.getValueAsBoolean();
 
   private final LongAdder atomicOperationsCount = new LongAdder();
@@ -178,7 +175,7 @@ public class OAtomicOperationsManager implements OAtomicOperationsMangerMXBean {
     final OOperationUnitId unitId = OOperationUnitId.generateId();
     final OLogSequenceNumber lsn = useWal ? writeAheadLog.logAtomicOperationStartRecord(true, unitId) : null;
 
-    operation = new OAtomicOperation(lsn, unitId, readCache, writeCache, storage.getId());
+    operation = new OAtomicOperation(lsn, unitId, readCache, writeCache, storage.getId(), writeAheadLog);
     currentOperation.set(operation);
 
     if (trackAtomicOperations) {
@@ -345,7 +342,7 @@ public class OAtomicOperationsManager implements OAtomicOperationsMangerMXBean {
     }
   }
 
-  public OAtomicOperation getCurrentOperation() {
+  public static OAtomicOperation getCurrentOperation() {
     return currentOperation.get();
   }
 
@@ -533,7 +530,7 @@ public class OAtomicOperationsManager implements OAtomicOperationsMangerMXBean {
     private final String                      message;
     private final Class<? extends OException> exceptionClass;
 
-    public FreezeParameters(String message, Class<? extends OException> exceptionClass) {
+    FreezeParameters(String message, Class<? extends OException> exceptionClass) {
       this.message = message;
       this.exceptionClass = exceptionClass;
     }
@@ -548,11 +545,11 @@ public class OAtomicOperationsManager implements OAtomicOperationsMangerMXBean {
     private final    Thread          item;
     private volatile WaitingListNode next;
 
-    public WaitingListNode(Thread item) {
+    WaitingListNode(Thread item) {
       this.item = item;
     }
 
-    public void waitTillAllLinksWillBeCreated() {
+    void waitTillAllLinksWillBeCreated() {
       try {
         linkLatch.await();
       } catch (InterruptedException e) {

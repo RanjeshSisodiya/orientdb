@@ -27,14 +27,17 @@ import com.orientechnologies.orient.core.storage.cache.OCachePointer;
 import com.orientechnologies.orient.core.storage.cache.OReadCache;
 import com.orientechnologies.orient.core.storage.cache.OWriteCache;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OBackupPageRecord;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OFileCreatedWALRecord;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OFileDeletedWALRecord;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSequenceNumber;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OOperationUnitId;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OPageOperationsContainer;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OUpdatePageRecord;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWriteAheadLog;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,22 +68,24 @@ public class OAtomicOperation {
   private final Set<Long>              deletedFiles         = new HashSet<>();
   private final Map<String, Long>      deletedFileNameIdMap = new HashMap<>();
 
-  private final OReadCache  readCache;
-  private final OWriteCache writeCache;
+  private final OReadCache     readCache;
+  private final OWriteCache    writeCache;
+  private final OWriteAheadLog writeAheadLog;
 
   private final Map<String, OAtomicOperationMetadata<?>> metadata = new LinkedHashMap<>();
 
   public OAtomicOperation(OLogSequenceNumber startLSN, OOperationUnitId operationUnitId, OReadCache readCache,
-      OWriteCache writeCache, int storageId) {
+      OWriteCache writeCache, int storageId, OWriteAheadLog writeAheadLog) {
     this.storageId = storageId;
     this.startLSN = startLSN;
     this.operationUnitId = operationUnitId;
+    this.writeAheadLog = writeAheadLog;
     startCounter = 1;
     this.readCache = readCache;
     this.writeCache = writeCache;
   }
 
-  public OLogSequenceNumber getStartLSN() {
+  private OLogSequenceNumber getStartLSN() {
     return startLSN;
   }
 
@@ -111,10 +116,26 @@ public class OAtomicOperation {
       if (checkChangesFilledUpTo(changesContainer, pageIndex)) {
         if (pageChangesContainer == null) {
           OCacheEntry delegate = readCache.loadForRead(fileId, pageIndex, checkPinnedPages, writeCache, pageCount, true);
+
           if (delegate != null) {
             pageChangesContainer = new OCacheEntryChanges();
             changesContainer.pageChangesMap.put(pageIndex, pageChangesContainer);
             pageChangesContainer.delegate = delegate;
+
+            if (writeAheadLog != null) {
+              final ByteBuffer buffer = delegate.getCachePointer().getBufferDuplicate();
+              final OLogSequenceNumber lsn = ODurablePage.getLogSequenceNumberFromPage(buffer);
+
+              //copy initial state of page to restore it in case of page is broken
+              if (lsn.getSegment() < writeAheadLog.end().getSegment()) {
+                final byte[] page = new byte[buffer.limit()];
+                buffer.rewind();
+                buffer.get(page);
+
+                pageChangesContainer.page = page;
+              }
+            }
+
             return pageChangesContainer;
           }
         } else {
@@ -288,7 +309,7 @@ public class OAtomicOperation {
    *
    * @return true if there are no changes or pageIndex still fit, false if the pageIndex do not fit anymore
    */
-  private boolean checkChangesFilledUpTo(FileChanges changesContainer, long pageIndex) {
+  private static boolean checkChangesFilledUpTo(FileChanges changesContainer, long pageIndex) {
     if (changesContainer == null) {
       return true;
     } else if (changesContainer.isNew || changesContainer.maxNewPageIndex > -2) {
@@ -402,10 +423,10 @@ public class OAtomicOperation {
     fileChanges.truncate = true;
   }
 
-  public OLogSequenceNumber commitChanges(OWriteAheadLog writeAheadLog) throws IOException {
+  OLogSequenceNumber commitChanges(OWriteAheadLog writeAheadLog) throws IOException {
     OLogSequenceNumber txEndLsn = null;
     if (writeAheadLog != null) {
-      OLogSequenceNumber startLSN = writeAheadLog.end();
+      OLogSequenceNumber committedChangesLSN = writeAheadLog.end();
 
       for (long deletedFileId : deletedFiles) {
         writeAheadLog.log(new OFileDeletedWALRecord(operationUnitId, deletedFileId));
@@ -427,13 +448,25 @@ public class OAtomicOperation {
         while (filePageChangesIterator.hasNext()) {
           Map.Entry<Long, OCacheEntryChanges> filePageChangesEntry = filePageChangesIterator.next();
 
-          if (filePageChangesEntry.getValue().changes.hasChanges()) {
-            final long pageIndex = filePageChangesEntry.getKey();
-            final OCacheEntryChanges filePageChanges = filePageChangesEntry.getValue();
+          final OCacheEntryChanges cacheEntryChanges = filePageChangesEntry.getValue();
+          final long pageIndex = filePageChangesEntry.getKey();
 
+          if (cacheEntryChanges.isNew) {
+            writeAheadLog.log(new OBackupPageRecord(pageIndex, fileId, operationUnitId, true, null));
+          } else if (cacheEntryChanges.page != null) {
+            writeAheadLog.log(new OBackupPageRecord(pageIndex, fileId, operationUnitId, false, cacheEntryChanges.page));
+          }
+
+          if (!cacheEntryChanges.pageOperations.isEmpty()) {
+            final OLogSequenceNumber changesLSN = writeAheadLog.log(
+                new OPageOperationsContainer(pageIndex, fileId, operationUnitId, cacheEntryChanges.pageOperations,
+                    cacheEntryChanges.walPageId));
+
+            cacheEntryChanges.setChangeLSN(changesLSN);
+          } else if (filePageChangesEntry.getValue().changes.hasChanges()) {
             final OLogSequenceNumber changesLSN = writeAheadLog
-                .log(new OUpdatePageRecord(pageIndex, fileId, operationUnitId, filePageChanges.changes));
-            filePageChanges.setChangeLSN(changesLSN);
+                .log(new OUpdatePageRecord(pageIndex, fileId, operationUnitId, cacheEntryChanges.changes));
+            cacheEntryChanges.setChangeLSN(changesLSN);
           } else {
             filePageChangesIterator.remove();
           }
@@ -467,14 +500,14 @@ public class OAtomicOperation {
             final long pageIndex = filePageChangesEntry.getKey();
             final OCacheEntryChanges filePageChanges = filePageChangesEntry.getValue();
 
-            OCacheEntry cacheEntry = readCache.loadForWrite(fileId, pageIndex, true, writeCache, 1, true, startLSN);
+            OCacheEntry cacheEntry = readCache.loadForWrite(fileId, pageIndex, true, writeCache, 1, true, committedChangesLSN);
             if (cacheEntry == null) {
               assert filePageChanges.isNew;
               do {
                 if (cacheEntry != null)
                   readCache.releaseFromWrite(cacheEntry, writeCache);
 
-                cacheEntry = readCache.allocateNewPage(fileId, writeCache, true, startLSN);
+                cacheEntry = readCache.allocateNewPage(fileId, writeCache, true, committedChangesLSN);
               } while (cacheEntry.getPageIndex() != pageIndex);
             }
 
@@ -609,15 +642,15 @@ public class OAtomicOperation {
     private       String                        fileName        = null;
   }
 
-  private int storageId(long fileId) {
+  private static int storageId(long fileId) {
     return (int) (fileId >>> 32);
   }
 
-  private long composeFileId(long fileId, int storageId) {
+  private static long composeFileId(long fileId, int storageId) {
     return (((long) storageId) << 32) | fileId;
   }
 
-  private long checkFileIdCompatibility(long fileId, int storageId) {
+  private static long checkFileIdCompatibility(long fileId, int storageId) {
     // indicates that storage has no it's own id.
     if (storageId == -1)
       return fileId;

@@ -26,6 +26,12 @@ import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.exception.OStorageException;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpositionmap.OClusterPositionMapAddPagePageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpositionmap.OClusterPositionMapAllocatePageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpositionmap.OClusterPositionMapRemovePageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpositionmap.OClusterPositionMapResurrectPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpositionmap.OClusterPositionMapSetPageOperation;
 
 /**
  * @author Andrey Lomakin (a.lomakin-at-orientdb.com)
@@ -37,16 +43,16 @@ public class OClusterPositionMapBucket extends ODurablePage {
   private static final int POSITIONS_OFFSET = SIZE_OFFSET + OIntegerSerializer.INT_SIZE;
 
   // NEVER USED ON DISK
-  public static final byte NOT_EXISTENT     = 0;
-  public static final byte REMOVED          = 1;
-  public static final byte FILLED           = 2;
-  public static final byte ALLOCATED        = 4;
+  static final        byte NOT_EXISTENT = 0;
+  public static final byte REMOVED      = 1;
+  static final        byte FILLED       = 2;
+  static final        byte ALLOCATED    = 4;
 
   private static final int ENTRY_SIZE = OByteSerializer.BYTE_SIZE + OIntegerSerializer.INT_SIZE + OLongSerializer.LONG_SIZE;
 
-  public static final int  MAX_ENTRIES      = (MAX_PAGE_SIZE_BYTES - POSITIONS_OFFSET) / ENTRY_SIZE;
+  static final int MAX_ENTRIES = (MAX_PAGE_SIZE_BYTES - POSITIONS_OFFSET) / ENTRY_SIZE;
 
-  public OClusterPositionMapBucket(OCacheEntry cacheEntry) {
+  OClusterPositionMapBucket(OCacheEntry cacheEntry) {
     super(cacheEntry);
   }
 
@@ -61,6 +67,7 @@ public class OClusterPositionMapBucket extends ODurablePage {
 
     setIntValue(SIZE_OFFSET, size + 1);
 
+    addPageOperation(new OClusterPositionMapAddPagePageOperation(pageIndex, recordPosition));
     return size;
   }
 
@@ -75,6 +82,7 @@ public class OClusterPositionMapBucket extends ODurablePage {
 
     setIntValue(SIZE_OFFSET, size + 1);
 
+    addPageOperation(new OClusterPositionMapAllocatePageOperation());
     return size;
   }
 
@@ -105,9 +113,10 @@ public class OClusterPositionMapBucket extends ODurablePage {
       throw new OStorageException("Provided index " + index + " points to removed entry");
 
     updateEntry(position, entry);
+    addPageOperation(new OClusterPositionMapSetPageOperation(index, entry.pageIndex, entry.recordPosition));
   }
 
-  public void resurrect(final int index, final PositionEntry entry) {
+  void resurrect(final int index, final PositionEntry entry) {
     final int size = getIntValue(SIZE_OFFSET);
 
     if (index >= size)
@@ -121,9 +130,10 @@ public class OClusterPositionMapBucket extends ODurablePage {
       throw new OStorageException("Cannot resurrect a record: provided index " + index + " points to a non removed entry");
 
     updateEntry(position, entry);
+    addPageOperation(new OClusterPositionMapResurrectPageOperation(index, entry.pageIndex, entry.recordPosition));
   }
 
-  private int entryPosition(int index) {
+  private static int entryPosition(int index) {
     return index * ENTRY_SIZE + POSITIONS_OFFSET;
   }
 
@@ -138,17 +148,21 @@ public class OClusterPositionMapBucket extends ODurablePage {
   public void remove(int index) {
     int size = getIntValue(SIZE_OFFSET);
 
-    if (index >= size)
+    if (index >= size) {
       return;
+    }
 
     int position = entryPosition(index);
 
-    if (getByteValue(position) != FILLED)
+    if (getByteValue(position) != FILLED) {
       return;
+    }
 
     setByteValue(position, REMOVED);
 
     readEntry(position);
+
+    addPageOperation(new OClusterPositionMapRemovePageOperation(index));
   }
 
   private PositionEntry readEntry(int position) {
@@ -189,11 +203,16 @@ public class OClusterPositionMapBucket extends ODurablePage {
     return getByteValue(position);
   }
 
+  @Override
+  public byte getWalId() {
+    return OPageIds.CLUSTER_POSITION_MAP_BUCKET;
+  }
+
   public static class PositionEntry {
     private final long pageIndex;
     private final int  recordPosition;
 
-    public PositionEntry(final long pageIndex,final  int recordPosition) {
+    PositionEntry(final long pageIndex, final int recordPosition) {
       this.pageIndex = pageIndex;
       this.recordPosition = recordPosition;
     }
@@ -202,9 +221,8 @@ public class OClusterPositionMapBucket extends ODurablePage {
       return pageIndex;
     }
 
-    public int getRecordPosition() {
+    int getRecordPosition() {
       return recordPosition;
     }
-
   }
 }

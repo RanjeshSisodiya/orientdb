@@ -29,6 +29,7 @@ import com.orientechnologies.orient.core.encryption.OEncryption;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
@@ -422,6 +423,11 @@ public class OHashIndexBucket<K, V> extends ODurablePage implements Iterable<OHa
 
   public void setSplitHistory(int level, long position) throws IOException {
     setLongValue(HISTORY_OFFSET + OLongSerializer.LONG_SIZE * level, position);
+  }
+
+  @Override
+  public byte getWalId() {
+    return OPageIds.HASH_INDEX_BUCKET;
   }
 
   public static class Entry<K, V> {

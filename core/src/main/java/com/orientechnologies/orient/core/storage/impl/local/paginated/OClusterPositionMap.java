@@ -27,6 +27,7 @@ import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurableComponent;
 
 import java.io.IOException;
@@ -47,7 +48,7 @@ public class OClusterPositionMap extends ODurableComponent {
   public void open() throws IOException {
     acquireExclusiveLock();
     try {
-      OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+      OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
       fileId = openFile(atomicOperation, getFullName());
     } finally {
       releaseExclusiveLock();
@@ -306,7 +307,7 @@ public class OClusterPositionMap extends ODurableComponent {
         long pageIndex = clusterPosition / OClusterPositionMapBucket.MAX_ENTRIES;
         int index = (int) (clusterPosition % OClusterPositionMapBucket.MAX_ENTRIES);
 
-        final OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        final OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         if (pageIndex >= getFilledUpTo(atomicOperation, fileId))
           return null;
@@ -389,7 +390,7 @@ public class OClusterPositionMap extends ODurableComponent {
         long pageIndex = realPosition / OClusterPositionMapBucket.MAX_ENTRIES;
         int index = (int) (realPosition % OClusterPositionMapBucket.MAX_ENTRIES);
 
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
         final long filledUpTo = getFilledUpTo(atomicOperation, fileId);
 
         if (pageIndex >= filledUpTo)
@@ -453,7 +454,7 @@ public class OClusterPositionMap extends ODurableComponent {
         long pageIndex = clusterPosition / OClusterPositionMapBucket.MAX_ENTRIES;
         int index = (int) (clusterPosition % OClusterPositionMapBucket.MAX_ENTRIES);
 
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
         final long filledUpTo = getFilledUpTo(atomicOperation, fileId);
 
         if (pageIndex >= filledUpTo)
@@ -533,7 +534,7 @@ public class OClusterPositionMap extends ODurableComponent {
         long pageIndex = clusterPosition / OClusterPositionMapBucket.MAX_ENTRIES;
         int index = (int) (clusterPosition % OClusterPositionMapBucket.MAX_ENTRIES);
 
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         final long filledUpTo = getFilledUpTo(atomicOperation, fileId);
         long[] result;
@@ -594,7 +595,7 @@ public class OClusterPositionMap extends ODurableComponent {
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         final long filledUpTo = getFilledUpTo(atomicOperation, fileId);
         for (long pageIndex = 0; pageIndex < filledUpTo; pageIndex++) {
@@ -629,7 +630,7 @@ public class OClusterPositionMap extends ODurableComponent {
         final long pageIndex = clusterPosition / OClusterPositionMapBucket.MAX_ENTRIES;
         final int index = (int) (clusterPosition % OClusterPositionMapBucket.MAX_ENTRIES);
 
-        final OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        final OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
         if (pageIndex >= getFilledUpTo(atomicOperation, fileId))
           return OClusterPositionMapBucket.NOT_EXISTENT;
@@ -656,7 +657,7 @@ public class OClusterPositionMap extends ODurableComponent {
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
         final long filledUpTo = getFilledUpTo(atomicOperation, fileId);
 
         for (long pageIndex = filledUpTo - 1; pageIndex >= 0; pageIndex--) {
@@ -691,7 +692,7 @@ public class OClusterPositionMap extends ODurableComponent {
     try {
       acquireSharedLock();
       try {
-        OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+        OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
         final long filledUpTo = getFilledUpTo(atomicOperation, fileId);
 
         final long pageIndex = filledUpTo - 1;

@@ -28,6 +28,19 @@ import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.exception.OSBTreeBonsaiLocalException;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketAddAllPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketAddLeafEntryPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketAddNonLeafEntryPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketInitPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketRemovePageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketSetDeletedPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketSetFreeListPointerPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketSetLeftSiblingPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketSetRightSiblingPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketSetTreeSizePageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketShrinkPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketUpdateValuePageOperation;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,15 +53,15 @@ import java.util.Map;
  * @since 8/7/13
  */
 public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
-  public static final  int     MAX_BUCKET_SIZE_BYTES    = OGlobalConfiguration.SBTREEBONSAI_BUCKET_SIZE.getValueAsInteger() * 1024;
+  static final         int     MAX_BUCKET_SIZE_BYTES  = OGlobalConfiguration.SBTREEBONSAI_BUCKET_SIZE.getValueAsInteger() * 1024;
   /**
    * Maximum size of key-value pair which can be put in SBTreeBonsai in bytes (24576000 by default)
    */
-  private static final byte    LEAF                     = 0x1;
-  private static final byte    DELETED                  = 0x2;
-  private static final int     MAX_ENTREE_SIZE          = 24576000;
-  private static final int     FREE_POINTER_OFFSET      = WAL_POSITION_OFFSET + OLongSerializer.LONG_SIZE;
-  private static final int     SIZE_OFFSET              = FREE_POINTER_OFFSET + OIntegerSerializer.INT_SIZE;
+  private static final byte    LEAF                   = 0x1;
+  private static final byte    DELETED                = 0x2;
+  private static final int     MAX_ENTREE_SIZE        = 24576000;
+  private static final int     FREE_POINTER_OFFSET    = WAL_POSITION_OFFSET + OLongSerializer.LONG_SIZE;
+  private static final int     SIZE_OFFSET            = FREE_POINTER_OFFSET + OIntegerSerializer.INT_SIZE;
   private static final int     FLAGS_OFFSET             = SIZE_OFFSET + OIntegerSerializer.INT_SIZE;
   private static final int     FREE_LIST_POINTER_OFFSET = FLAGS_OFFSET + OByteSerializer.BYTE_SIZE;
   private static final int     LEFT_SIBLING_OFFSET      = FREE_LIST_POINTER_OFFSET + OBonsaiBucketPointer.SIZE;
@@ -56,7 +69,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
   private static final int     TREE_SIZE_OFFSET         = RIGHT_SIBLING_OFFSET + OBonsaiBucketPointer.SIZE;
   private static final int     KEY_SERIALIZER_OFFSET    = TREE_SIZE_OFFSET + OLongSerializer.LONG_SIZE;
   private static final int     VALUE_SERIALIZER_OFFSET  = KEY_SERIALIZER_OFFSET + OByteSerializer.BYTE_SIZE;
-  private static final int     POSITIONS_ARRAY_OFFSET   = VALUE_SERIALIZER_OFFSET + OByteSerializer.BYTE_SIZE;
+  private static final int     POSITIONS_ARRAY_OFFSET = VALUE_SERIALIZER_OFFSET + OByteSerializer.BYTE_SIZE;
   private final        boolean isLeaf;
   private final        int     offset;
 
@@ -68,13 +81,13 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
   private final OSBTreeBonsaiLocal<K, V> tree;
 
   public static final class SBTreeEntry<K, V> implements Map.Entry<K, V>, Comparable<SBTreeEntry<K, V>> {
-    public final  OBonsaiBucketPointer  leftChild;
-    public final  OBonsaiBucketPointer  rightChild;
+    final         OBonsaiBucketPointer  leftChild;
+    final         OBonsaiBucketPointer  rightChild;
     public final  K                     key;
     public final  V                     value;
     private final Comparator<? super K> comparator = ODefaultComparator.INSTANCE;
 
-    public SBTreeEntry(OBonsaiBucketPointer leftChild, OBonsaiBucketPointer rightChild, K key, V value) {
+    SBTreeEntry(OBonsaiBucketPointer leftChild, OBonsaiBucketPointer rightChild, K key, V value) {
       this.leftChild = leftChild;
       this.rightChild = rightChild;
       this.key = key;
@@ -137,8 +150,8 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
     }
   }
 
-  public OSBTreeBonsaiBucket(OCacheEntry cacheEntry, int pageOffset, boolean isLeaf, OBinarySerializer<K> keySerializer,
-      OBinarySerializer<V> valueSerializer, OSBTreeBonsaiLocal<K, V> tree) throws IOException {
+  OSBTreeBonsaiBucket(OCacheEntry cacheEntry, int pageOffset, boolean isLeaf, OBinarySerializer<K> keySerializer,
+      OBinarySerializer<V> valueSerializer, OSBTreeBonsaiLocal<K, V> tree) {
     super(cacheEntry);
 
     this.offset = pageOffset;
@@ -150,7 +163,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
     setIntValue(offset + SIZE_OFFSET, 0);
 
     //THIS REMOVE ALSO THE EVENTUAL DELETED FLAG
-    setByteValue(offset + FLAGS_OFFSET, (byte) (isLeaf ? LEAF : 0));
+    setByteValue(offset + FLAGS_OFFSET, (isLeaf ? LEAF : 0));
     setLongValue(offset + LEFT_SIBLING_OFFSET, -1);
     setLongValue(offset + RIGHT_SIBLING_OFFSET, -1);
 
@@ -159,9 +172,11 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
     setByteValue(offset + KEY_SERIALIZER_OFFSET, keySerializer.getId());
     setByteValue(offset + VALUE_SERIALIZER_OFFSET, valueSerializer.getId());
     this.tree = tree;
+
+    addPageOperation(new OBonsaiBucketInitPageOperation());
   }
 
-  public OSBTreeBonsaiBucket(OCacheEntry cacheEntry, int pageOffset, OBinarySerializer<K> keySerializer,
+  OSBTreeBonsaiBucket(OCacheEntry cacheEntry, int pageOffset, OBinarySerializer<K> keySerializer,
       OBinarySerializer<V> valueSerializer, OSBTreeBonsaiLocal<K, V> tree) {
     super(cacheEntry);
 
@@ -172,28 +187,22 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
     this.tree = tree;
   }
 
-  public byte getKeySerializerId() {
+  byte getKeySerializerId() {
     return getByteValue(offset + KEY_SERIALIZER_OFFSET);
   }
 
-  public void setKeySerializerId(byte keySerializerId) {
-    setByteValue(offset + KEY_SERIALIZER_OFFSET, keySerializerId);
-  }
-
-  public byte getValueSerializerId() {
+  byte getValueSerializerId() {
     return getByteValue(offset + VALUE_SERIALIZER_OFFSET);
   }
 
-  public void setValueSerializerId(byte valueSerializerId) {
-    setByteValue(offset + VALUE_SERIALIZER_OFFSET, valueSerializerId);
-  }
-
-  public long getTreeSize() {
+  long getTreeSize() {
     return getLongValue(offset + TREE_SIZE_OFFSET);
   }
 
-  public void setTreeSize(long size) throws IOException {
+  void setTreeSize(long size) {
     setLongValue(offset + TREE_SIZE_OFFSET, size);
+
+    addPageOperation(new OBonsaiBucketSetTreeSizePageOperation(size));
   }
 
   public boolean isEmpty() {
@@ -219,7 +228,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
     return -(low + 1); // key not found.
   }
 
-  public void remove(int entryIndex) throws IOException {
+  public void remove(int entryIndex) {
     int entryPosition = getIntValue(offset + POSITIONS_ARRAY_OFFSET + entryIndex * OIntegerSerializer.INT_SIZE);
 
     int entrySize = getObjectSizeInDirectMemory(keySerializer, offset + entryPosition);
@@ -254,6 +263,8 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
         setIntValue(currentPositionOffset, currentEntryPosition + entrySize);
       currentPositionOffset += OIntegerSerializer.INT_SIZE;
     }
+
+    addPageOperation(new OBonsaiBucketRemovePageOperation(entryIndex));
   }
 
   public int size() {
@@ -269,7 +280,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
 
       V value = deserializeFromDirectMemory(valueSerializer, offset + entryPosition);
 
-      return new SBTreeEntry<K, V>(OBonsaiBucketPointer.NULL, OBonsaiBucketPointer.NULL, key, value);
+      return new SBTreeEntry<>(OBonsaiBucketPointer.NULL, OBonsaiBucketPointer.NULL, key, value);
     } else {
       OBonsaiBucketPointer leftChild = getBucketPointer(offset + entryPosition);
       entryPosition += OBonsaiBucketPointer.SIZE;
@@ -279,7 +290,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
 
       K key = deserializeFromDirectMemory(keySerializer, offset + entryPosition);
 
-      return new SBTreeEntry<K, V>(leftChild, rightChild, key, null);
+      return new SBTreeEntry<>(leftChild, rightChild, key, null);
     }
   }
 
@@ -311,7 +322,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
     return deserializeFromDirectMemory(keySerializer, offset + entryPosition);
   }
 
-  public boolean isLeaf() {
+  boolean isLeaf() {
     return isLeaf;
   }
 
@@ -321,6 +332,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
     }
 
     setIntValue(offset + SIZE_OFFSET, entries.size());
+    addPageOperation(new OBonsaiBucketAddAllPageOperation(entries));
   }
 
   public void shrink(final int newSize) {
@@ -339,6 +351,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
     }
 
     setIntValue(offset + SIZE_OFFSET, newSize);
+    addPageOperation(new OBonsaiBucketShrinkPageOperation(newSize));
   }
 
   public boolean addEntry(int index, SBTreeEntry<K, V> treeEntry, boolean updateNeighbors) throws IOException {
@@ -391,6 +404,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
       valueSerializer.serializeNativeObject(treeEntry.value, serializedValue, 0);
       setBinaryValue(offset + freePointer, serializedValue);
 
+      addPageOperation(new OBonsaiBucketAddLeafEntryPageOperation(index, serializedKey, serializedValue));
     } else {
       setBucketPointer(offset + freePointer, treeEntry.leftChild);
       freePointer += OLongSerializer.LONG_SIZE + OIntegerSerializer.INT_SIZE;
@@ -416,6 +430,10 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
               treeEntry.leftChild);
         }
       }
+
+      addPageOperation(
+          new OBonsaiBucketAddNonLeafEntryPageOperation(index, serializedKey, treeEntry.leftChild, treeEntry.rightChild,
+              updateNeighbors));
     }
 
     return true;
@@ -432,7 +450,7 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
     setBinaryValue(offset + freePointer, rawEntry);
   }
 
-  public int updateValue(int index, V value) throws IOException {
+  int updateValue(int index, V value) {
     assert valueSerializer.isFixedLength();
 
     int entryPosition = getIntValue(offset + index * OIntegerSerializer.INT_SIZE + POSITIONS_ARRAY_OFFSET);
@@ -450,49 +468,63 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
 
     setBinaryValue(offset + entryPosition, serializedValue);
 
+    addPageOperation(new OBonsaiBucketUpdateValuePageOperation(index, serializedValue));
     return 1;
   }
 
-  public OBonsaiBucketPointer getFreeListPointer() {
+  OBonsaiBucketPointer getFreeListPointer() {
     return getBucketPointer(offset + FREE_LIST_POINTER_OFFSET);
   }
 
-  public void setFreeListPointer(OBonsaiBucketPointer pointer) throws IOException {
+  void setFreeListPointer(OBonsaiBucketPointer pointer) throws IOException {
     setBucketPointer(offset + FREE_LIST_POINTER_OFFSET, pointer);
+
+    addPageOperation(new OBonsaiBucketSetFreeListPointerPageOperation(pointer));
   }
 
-  public void setDelted(boolean deleted) {
+  public void setDeleted(boolean deleted) {
     byte value = getByteValue(offset + FLAGS_OFFSET);
-    if (deleted)
+
+    if (deleted) {
       setByteValue(offset + FLAGS_OFFSET, (byte) (value | DELETED));
-    else
-      //REMOVE THE FLAG the &(and) ~(not) is the opreation to remove flags in bits
+    } else {
+      //REMOVE THE FLAG the &(and) ~(not) is the operation to remove flags in bits
       setByteValue(offset + FLAGS_OFFSET, (byte) (value & (~DELETED)));
+    }
+
+    addPageOperation(new OBonsaiBucketSetDeletedPageOperation(deleted));
   }
 
   public boolean isDeleted() {
     return (getByteValue(offset + FLAGS_OFFSET) & DELETED) == DELETED;
   }
 
-  public OBonsaiBucketPointer getLeftSibling() {
+  OBonsaiBucketPointer getLeftSibling() {
     return getBucketPointer(offset + LEFT_SIBLING_OFFSET);
   }
 
-  public void setLeftSibling(OBonsaiBucketPointer pointer) throws IOException {
+  void setLeftSibling(OBonsaiBucketPointer pointer) throws IOException {
     setBucketPointer(offset + LEFT_SIBLING_OFFSET, pointer);
+    addPageOperation(new OBonsaiBucketSetLeftSiblingPageOperation(pointer));
   }
 
-  public OBonsaiBucketPointer getRightSibling() {
+  OBonsaiBucketPointer getRightSibling() {
     return getBucketPointer(offset + RIGHT_SIBLING_OFFSET);
   }
 
-  public void setRightSibling(OBonsaiBucketPointer pointer) throws IOException {
+  void setRightSibling(OBonsaiBucketPointer pointer) throws IOException {
     setBucketPointer(offset + RIGHT_SIBLING_OFFSET, pointer);
+    addPageOperation(new OBonsaiBucketSetRightSiblingPageOperation(pointer));
   }
 
   private void checkEntreeSize(int entreeSize) {
     if (entreeSize > MAX_ENTREE_SIZE)
       throw new OSBTreeBonsaiLocalException(
           "Serialized key-value pair size bigger than allowed " + entreeSize + " vs " + MAX_ENTREE_SIZE + ".", tree);
+  }
+
+  @Override
+  public byte getWalId() {
+    return OPageIds.BONSAI_BUCKET;
   }
 }

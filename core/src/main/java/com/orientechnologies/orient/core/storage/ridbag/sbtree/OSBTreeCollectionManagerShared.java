@@ -30,6 +30,7 @@ import com.orientechnologies.orient.core.exception.OAccessToSBtreeCollectionMana
 import com.orientechnologies.orient.core.serialization.serializer.binary.impl.OLinkSerializer;
 import com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager;
 import com.orientechnologies.orient.core.storage.index.sbtreebonsai.local.OSBTreeBonsai;
 import com.orientechnologies.orient.core.storage.index.sbtreebonsai.local.OSBTreeBonsaiLocal;
 
@@ -142,7 +143,7 @@ public class OSBTreeCollectionManagerShared extends OSBTreeCollectionManagerAbst
   @Override
   protected OSBTreeBonsai<OIdentifiable, Integer> loadTree(OBonsaiCollectionPointer collectionPointer) {
     String fileName;
-    OAtomicOperation atomicOperation = storage.getAtomicOperationsManager().getCurrentOperation();
+    OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
     if (atomicOperation == null) {
       fileName = storage.getWriteCache().fileNameById(collectionPointer.getFileId());
     } else {

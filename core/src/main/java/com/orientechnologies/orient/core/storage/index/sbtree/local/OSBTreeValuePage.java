@@ -20,12 +20,13 @@
 
 package com.orientechnologies.orient.core.storage.index.sbtree.local;
 
-import java.io.IOException;
-
 import com.orientechnologies.common.serialization.types.OIntegerSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
+
+import java.io.IOException;
 
 /**
  * This page will contain value if it exceeds value limit for SBTree. Value is stored as list of linked pages. Following format is
@@ -109,5 +110,10 @@ public class OSBTreeValuePage extends ODurablePage {
 
   public static int calculateAmountOfPage(int contentSize) {
     return (int) Math.ceil(1.0 * contentSize / MAX_BINARY_VALUE_SIZE);
+  }
+
+  @Override
+  public byte getWalId() {
+    return OPageIds.SBTREE_VALUE_PAGE;
   }
 }

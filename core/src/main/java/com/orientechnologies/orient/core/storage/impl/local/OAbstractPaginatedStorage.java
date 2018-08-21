@@ -4212,7 +4212,7 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
 
   private OLogSequenceNumber endStorageTx() throws IOException {
     final OLogSequenceNumber lsn = atomicOperationsManager.endAtomicOperation(false, null);
-    assert atomicOperationsManager.getCurrentOperation() == null;
+    assert OAtomicOperationsManager.getCurrentOperation() == null;
     return lsn;
   }
 
@@ -4221,7 +4221,7 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
     if (storageTx != null && storageTx.getClientTx().getId() != clientTx.getId())
       rollback(clientTx);
 
-    assert atomicOperationsManager.getCurrentOperation() == null;
+    assert OAtomicOperationsManager.getCurrentOperation() == null;
 
     transaction.set(new OStorageTransaction(clientTx));
     try {
@@ -4238,7 +4238,7 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
 
     atomicOperationsManager.endAtomicOperation(true, null);
 
-    assert atomicOperationsManager.getCurrentOperation() == null;
+    assert OAtomicOperationsManager.getCurrentOperation() == null;
   }
 
   private void recoverIfNeeded() throws Exception {
@@ -5510,7 +5510,7 @@ public abstract class OAbstractPaginatedStorage extends OStorageAbstract
 
   private void lockRidBags(final TreeMap<Integer, OCluster> clusters, final TreeMap<String, OTransactionIndexChanges> indexes,
       OIndexManager manager) {
-    final OAtomicOperation atomicOperation = atomicOperationsManager.getCurrentOperation();
+    final OAtomicOperation atomicOperation = OAtomicOperationsManager.getCurrentOperation();
 
     for (Integer clusterId : clusters.keySet())
       atomicOperationsManager

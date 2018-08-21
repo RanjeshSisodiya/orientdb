@@ -23,6 +23,7 @@ package com.orientechnologies.orient.core.storage.index.hashindex.local;
 import com.orientechnologies.common.serialization.types.OIntegerSerializer;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
 
 import java.io.IOException;
 
@@ -62,5 +63,10 @@ public class ODirectoryFirstPage extends ODirectoryPage {
   @Override
   protected int getItemsOffset() {
     return ITEMS_OFFSET;
+  }
+
+  @Override
+  public byte getWalId() {
+    return OPageIds.HASH_INDEX_FIRST_DIRECTORY_PAGE;
   }
 }

@@ -22,6 +22,9 @@ package com.orientechnologies.orient.core.storage.cache;
 
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OLogSequenceNumber;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWALChanges;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
+
+import java.util.List;
 
 /**
  * @author Andrey Lomakin (a.lomakin-at-orientdb.com)
@@ -71,4 +74,8 @@ public interface OCacheEntry {
   OLogSequenceNumber getEndLSN();
 
   void setEndLSN(OLogSequenceNumber endLSN);
+
+  List<OPageOperation> getPageOperations();
+
+  void setWalId(byte walId);
 }

@@ -23,6 +23,10 @@ package com.orientechnologies.orient.core.storage.impl.local.paginated;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterstate.OClusterStateSetFreeListPage;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterstate.OClusterStateSetRecordsSizePageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterstate.OClusterStateSetSizePageOperation;
 
 /**
  * @author Andrey Lomakin (a.lomakin-at-orientdb.com)
@@ -33,31 +37,39 @@ public class OPaginatedClusterState extends ODurablePage {
   private static final int SIZE_OFFSET         = RECORDS_SIZE_OFFSET + OLongSerializer.LONG_SIZE;
   private static final int FREE_LIST_OFFSET    = SIZE_OFFSET + OLongSerializer.LONG_SIZE;
 
-  public OPaginatedClusterState(OCacheEntry cacheEntry) {
+  OPaginatedClusterState(OCacheEntry cacheEntry) {
     super(cacheEntry);
   }
 
   public void setSize(long size) {
     setLongValue(SIZE_OFFSET, size);
+    addPageOperation(new OClusterStateSetSizePageOperation(size));
   }
 
   public long getSize() {
     return getLongValue(SIZE_OFFSET);
   }
 
-  public void setRecordsSize(long recordsSize) {
+  void setRecordsSize(long recordsSize) {
     setLongValue(RECORDS_SIZE_OFFSET, recordsSize);
+    addPageOperation(new OClusterStateSetRecordsSizePageOperation(recordsSize));
   }
 
   public long getRecordsSize() {
     return getLongValue(RECORDS_SIZE_OFFSET);
   }
 
-  public void setFreeListPage(int index, long pageIndex) {
+  void setFreeListPage(int index, long pageIndex) {
     setLongValue(FREE_LIST_OFFSET + index * OLongSerializer.LONG_SIZE, pageIndex);
+    addPageOperation(new OClusterStateSetFreeListPage(index, pageIndex));
   }
 
-  public long getFreeListPage(int index) {
+  long getFreeListPage(int index) {
     return getLongValue(FREE_LIST_OFFSET + index * OLongSerializer.LONG_SIZE);
+  }
+
+  @Override
+  public byte getWalId() {
+    return OPageIds.PAGINATED_CLUSTER_STATE;
   }
 }

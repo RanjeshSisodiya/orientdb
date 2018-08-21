@@ -28,6 +28,14 @@ import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.record.ORecordVersionHelper;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpage.OClusterPageAppendRecordPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpage.OClusterPageDeleteRecordPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpage.OClusterPageInitPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpage.OClusterPageReplaceRecordPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpage.OClusterPageSetNextPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpage.OClusterPageSetNextRecordPointerPageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpage.OClusterPageSetPrevPageOperation;
 
 /**
  * @author Andrey Lomakin (a.lomakin-at-orientdb.com)
@@ -52,15 +60,15 @@ public class OClusterPage extends ODurablePage {
   private static final int POSITION_MASK          = 0xFFFF;
   public static final  int PAGE_SIZE              = OGlobalConfiguration.DISK_CACHE_PAGE_SIZE.getValueAsInteger() * 1024;
 
-  public static final int MAX_ENTRY_SIZE = PAGE_SIZE - PAGE_INDEXES_OFFSET - INDEX_ITEM_SIZE;
+  static final int MAX_ENTRY_SIZE = PAGE_SIZE - PAGE_INDEXES_OFFSET - INDEX_ITEM_SIZE;
 
-  public static final int MAX_RECORD_SIZE = MAX_ENTRY_SIZE - 3 * OIntegerSerializer.INT_SIZE;
+  static final int MAX_RECORD_SIZE = MAX_ENTRY_SIZE - 3 * OIntegerSerializer.INT_SIZE;
 
   private static final int ENTRY_KIND_HOLE    = -1;
   private static final int ENTRY_KIND_UNKNOWN = 0;
   private static final int ENTRY_KIND_DATA    = +1;
 
-  public OClusterPage(OCacheEntry cacheEntry, boolean newPage) {
+  OClusterPage(OCacheEntry cacheEntry, boolean newPage) {
     super(cacheEntry);
 
     if (newPage) {
@@ -69,10 +77,12 @@ public class OClusterPage extends ODurablePage {
 
       setIntValue(FREE_POSITION_OFFSET, PAGE_SIZE);
       setIntValue(FREE_SPACE_COUNTER_OFFSET, PAGE_SIZE - PAGE_INDEXES_OFFSET);
+
+      addPageOperation(new OClusterPageInitPageOperation());
     }
   }
 
-  public int appendRecord(final int recordVersion, final byte[] record) {
+  int appendRecord(final int recordVersion, final byte[] record) {
     int freePosition = getIntValue(FREE_POSITION_OFFSET);
     final int indexesLength = getIntValue(PAGE_INDEXES_LENGTH_OFFSET);
 
@@ -141,10 +151,12 @@ public class OClusterPage extends ODurablePage {
 
     incrementEntriesCount();
 
+    addPageOperation(new OClusterPageAppendRecordPageOperation(recordVersion, record));
+
     return entryIndex;
   }
 
-  public int replaceRecord(int entryIndex, byte[] record, final int recordVersion) {
+  int replaceRecord(int entryIndex, byte[] record, final int recordVersion) {
     int entryIndexPosition = PAGE_INDEXES_OFFSET + entryIndex * INDEX_ITEM_SIZE;
 
     if (recordVersion != -1) {
@@ -167,10 +179,12 @@ public class OClusterPage extends ODurablePage {
       writtenBytes = newRecord.length;
     }
 
+    addPageOperation(new OClusterPageReplaceRecordPageOperation(entryIndex, record, recordVersion));
+
     return writtenBytes;
   }
 
-  public int getRecordVersion(int position) {
+  int getRecordVersion(int position) {
     int indexesLength = getIntValue(PAGE_INDEXES_LENGTH_OFFSET);
     if (position >= indexesLength)
       return -1;
@@ -223,6 +237,8 @@ public class OClusterPage extends ODurablePage {
 
     decrementEntriesCount();
 
+    addPageOperation(new OClusterPageDeleteRecordPageOperation(position));
+
     return true;
   }
 
@@ -237,7 +253,7 @@ public class OClusterPage extends ODurablePage {
     return (entryPointer & MARKED_AS_DELETED_FLAG) != 0;
   }
 
-  public int getRecordSize(final int position) {
+  int getRecordSize(final int position) {
     final int indexesLength = getIntValue(PAGE_INDEXES_LENGTH_OFFSET);
     if (position >= indexesLength)
       return -1;
@@ -251,7 +267,7 @@ public class OClusterPage extends ODurablePage {
     return getIntValue(entryPosition + 2 * OIntegerSerializer.INT_SIZE);
   }
 
-  public int findFirstDeletedRecord(final int position) {
+  int findFirstDeletedRecord(final int position) {
     final int indexesLength = getIntValue(PAGE_INDEXES_LENGTH_OFFSET);
     for (int i = position; i < indexesLength; i++) {
       int entryIndexPosition = PAGE_INDEXES_OFFSET + INDEX_ITEM_SIZE * i;
@@ -263,7 +279,7 @@ public class OClusterPage extends ODurablePage {
     return -1;
   }
 
-  public int findFirstRecord(final int position) {
+  int findFirstRecord(final int position) {
     final int indexesLength = getIntValue(PAGE_INDEXES_LENGTH_OFFSET);
     for (int i = position; i < indexesLength; i++) {
       final int entryIndexPosition = PAGE_INDEXES_OFFSET + INDEX_ITEM_SIZE * i;
@@ -275,7 +291,7 @@ public class OClusterPage extends ODurablePage {
     return -1;
   }
 
-  public int findLastRecord(final int position) {
+  int findLastRecord(final int position) {
     final int indexesLength = getIntValue(PAGE_INDEXES_LENGTH_OFFSET);
 
     final int endIndex = Math.min(indexesLength - 1, position);
@@ -293,7 +309,7 @@ public class OClusterPage extends ODurablePage {
     return getIntValue(FREE_SPACE_COUNTER_OFFSET);
   }
 
-  public int getMaxRecordSize() {
+  int getMaxRecordSize() {
     final int freeListHeader = getIntValue(FREELIST_HEADER_OFFSET);
 
     final int maxEntrySize;
@@ -309,44 +325,44 @@ public class OClusterPage extends ODurablePage {
     return result;
   }
 
-  public int getRecordsCount() {
+  int getRecordsCount() {
     return getIntValue(ENTRIES_COUNT_OFFSET);
   }
 
-  public long getNextPage() {
+  long getNextPage() {
     return getLongValue(NEXT_PAGE_OFFSET);
   }
 
-  public void setNextPage(final long nextPage) {
+  void setNextPage(final long nextPage) {
     setLongValue(NEXT_PAGE_OFFSET, nextPage);
+    addPageOperation(new OClusterPageSetNextPageOperation(nextPage));
   }
 
-  public long getPrevPage() {
+  long getPrevPage() {
     return getLongValue(PREV_PAGE_OFFSET);
   }
 
-  public void setPrevPage(final long prevPage) {
+  void setPrevPage(final long prevPage) {
     setLongValue(PREV_PAGE_OFFSET, prevPage);
+    addPageOperation(new OClusterPageSetPrevPageOperation(prevPage));
   }
 
-  public void setRecordLongValue(final int recordPosition, final int offset, final long value) {
+  void setNextRecordPointer(final int recordPosition, final long value) {
     assert isPositionInsideInterval(recordPosition);
 
+    final int pointerOffset = -8;
     final int entryIndexPosition = PAGE_INDEXES_OFFSET + recordPosition * INDEX_ITEM_SIZE;
     final int entryPointer = getIntValue(entryIndexPosition);
     final int entryPosition = entryPointer & POSITION_MASK;
 
-    if (offset >= 0) {
-      assert insideRecordBounds(entryPosition, offset, OLongSerializer.LONG_SIZE);
-      setLongValue(entryPosition + offset + 3 * OIntegerSerializer.INT_SIZE, value);
-    } else {
-      final int recordSize = getIntValue(entryPosition + 2 * OIntegerSerializer.INT_SIZE);
-      assert insideRecordBounds(entryPosition, recordSize + offset, OLongSerializer.LONG_SIZE);
-      setLongValue(entryPosition + 3 * OIntegerSerializer.INT_SIZE + recordSize + offset, value);
-    }
+    final int recordSize = getIntValue(entryPosition + 2 * OIntegerSerializer.INT_SIZE);
+    assert insideRecordBounds(entryPosition, recordSize + pointerOffset, OLongSerializer.LONG_SIZE);
+    setLongValue(entryPosition + 3 * OIntegerSerializer.INT_SIZE + recordSize + pointerOffset, value);
+
+    addPageOperation(new OClusterPageSetNextRecordPointerPageOperation(recordPosition, value));
   }
 
-  public long getRecordLongValue(final int recordPosition, final int offset) {
+  long getRecordLongValue(final int recordPosition, final int offset) {
     assert isPositionInsideInterval(recordPosition);
 
     final int entryIndexPosition = PAGE_INDEXES_OFFSET + recordPosition * INDEX_ITEM_SIZE;
@@ -363,26 +379,19 @@ public class OClusterPage extends ODurablePage {
     }
   }
 
-  public byte[] getRecordBinaryValue(final int recordPosition, final int offset, final int size) {
+  byte[] getRecordBinaryValue(final int recordPosition, final int size) {
     assert isPositionInsideInterval(recordPosition);
 
     final int entryIndexPosition = PAGE_INDEXES_OFFSET + recordPosition * INDEX_ITEM_SIZE;
     final int entryPointer = getIntValue(entryIndexPosition);
     final int entryPosition = entryPointer & POSITION_MASK;
 
-    if (offset >= 0) {
-      assert insideRecordBounds(entryPosition, offset, size);
+    assert insideRecordBounds(entryPosition, 0, size);
 
-      return getBinaryValue(entryPosition + offset + 3 * OIntegerSerializer.INT_SIZE, size);
-    } else {
-      final int recordSize = getIntValue(entryPosition + 2 * OIntegerSerializer.INT_SIZE);
-      assert insideRecordBounds(entryPosition, recordSize + offset, OLongSerializer.LONG_SIZE);
-
-      return getBinaryValue(entryPosition + 3 * OIntegerSerializer.INT_SIZE + recordSize + offset, size);
-    }
+    return getBinaryValue(entryPosition + 3 * OIntegerSerializer.INT_SIZE, size);
   }
 
-  public byte getRecordByteValue(final int recordPosition, final int offset) {
+  byte getRecordByteValue(final int recordPosition, final int offset) {
     assert isPositionInsideInterval(recordPosition);
 
     final int entryIndexPosition = PAGE_INDEXES_OFFSET + recordPosition * INDEX_ITEM_SIZE;
@@ -402,7 +411,7 @@ public class OClusterPage extends ODurablePage {
   /**
    * Writes binary dump of this cluster page to the log.
    */
-  public void dumpToLog() {
+  void dumpToLog() {
     final StringBuilder text = new StringBuilder();
 
     text.append("Dump of ").append(this).append('\n');
@@ -540,4 +549,8 @@ public class OClusterPage extends ODurablePage {
     setIntValue(FREE_POSITION_OFFSET, freePosition + shift);
   }
 
+  @Override
+  public byte getWalId() {
+    return OPageIds.CLUSTER_PAGE;
+  }
 }
