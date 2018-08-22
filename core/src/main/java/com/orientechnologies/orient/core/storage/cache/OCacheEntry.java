@@ -76,6 +76,4 @@ public interface OCacheEntry {
   void setEndLSN(OLogSequenceNumber endLSN);
 
   List<OPageOperation> getPageOperations();
-
-  void setWalId(byte walId);
 }

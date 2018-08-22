@@ -41,6 +41,14 @@ public abstract class OAbstractPageWALRecord extends OOperationUnitBodyRecord {
     this.fileId = fileId;
   }
 
+  public void setPageIndex(long pageIndex) {
+    this.pageIndex = pageIndex;
+  }
+
+  public void setFileId(long fileId) {
+    this.fileId = fileId;
+  }
+
   @Override
   public int toStream(byte[] content, int offset) {
     offset = super.toStream(content, offset);

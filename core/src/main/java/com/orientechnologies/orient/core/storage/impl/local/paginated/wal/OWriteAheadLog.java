@@ -62,7 +62,7 @@ public interface OWriteAheadLog {
   OLogSequenceNumber logAtomicOperationEndRecord(OOperationUnitId operationUnitId, boolean rollback, OLogSequenceNumber startLsn,
       Map<String, OAtomicOperationMetadata<?>> atomicOperationMetadata) throws IOException;
 
-  OLogSequenceNumber log(OWriteableWALRecord record) throws IOException;
+  OLogSequenceNumber log(OWriteableWALRecord record);
 
   void close() throws IOException;
 

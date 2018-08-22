@@ -2,13 +2,13 @@ package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageo
 
 import com.orientechnologies.common.serialization.types.OIntegerSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 import com.orientechnologies.orient.core.storage.index.sbtreebonsai.local.OBonsaiBucketPointer;
 
 import java.nio.ByteBuffer;
 
-public class OSysBucketSetFreeSpacePointer implements OPageOperation {
+public class OSysBucketSetFreeSpacePointer extends OPageOperation {
   private OBonsaiBucketPointer pointer;
 
   public OSysBucketSetFreeSpacePointer(OBonsaiBucketPointer pointer) {
@@ -52,6 +52,6 @@ public class OSysBucketSetFreeSpacePointer implements OPageOperation {
 
   @Override
   public byte getId() {
-    return PageOperationTypes.SYS_BUCKET_SET_FREE_SPACE_POINTER;
+    return WALRecordTypes.SYS_BUCKET_SET_FREE_SPACE_POINTER_PAGE_OPERATION;
   }
 }

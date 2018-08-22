@@ -21,11 +21,8 @@ public class OCacheEntryChanges implements OCacheEntry {
   boolean isNew   = false;
   boolean pinPage = false;
 
-  byte walPageId;
-
   List<OPageOperation> pageOperations = new ArrayList<>();
   private OLogSequenceNumber changeLSN;
-  byte[] page;
 
   public OCacheEntryChanges(OCacheEntry entry) {
     delegate = entry;
@@ -141,15 +138,6 @@ public class OCacheEntryChanges implements OCacheEntry {
   @Override
   public List<OPageOperation> getPageOperations() {
     return pageOperations;
-  }
-
-  @Override
-  public void setWalId(byte walId) {
-    if (walId < 0) {
-      throw new IllegalStateException("Invalid value of WAL page id " + walId);
-    }
-
-    this.walPageId = walId;
   }
 
   OLogSequenceNumber getChangeLSN() {

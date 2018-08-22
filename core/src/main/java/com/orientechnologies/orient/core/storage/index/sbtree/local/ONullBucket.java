@@ -22,7 +22,6 @@ package com.orientechnologies.orient.core.storage.index.sbtree.local;
 import com.orientechnologies.common.serialization.types.OBinarySerializer;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.nullbucket.OSBTreeNullBucketInitPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.nullbucket.OSBTreeNullBucketRemoveValuePageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.nullbucket.OSBTreeNullBucketSetValuePageOperation;
@@ -87,8 +86,4 @@ public class ONullBucket<V> extends ODurablePage {
     addPageOperation(new OSBTreeNullBucketRemoveValuePageOperation());
   }
 
-  @Override
-  public byte getWalId() {
-    return OPageIds.SBTREE_NULL_BUCKET;
-  }
 }

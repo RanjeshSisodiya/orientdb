@@ -1,11 +1,11 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.nullbucket;
 
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 
 import java.nio.ByteBuffer;
 
-public class OSBTreeNullBucketRemoveValuePageOperation implements OPageOperation {
+public class OSBTreeNullBucketRemoveValuePageOperation extends OPageOperation {
   public OSBTreeNullBucketRemoveValuePageOperation() {
   }
 
@@ -31,6 +31,6 @@ public class OSBTreeNullBucketRemoveValuePageOperation implements OPageOperation
 
   @Override
   public byte getId() {
-    return PageOperationTypes.SBTREE_NULL_BUCKET_REMOVE_VALUE;
+    return WALRecordTypes.SBTREE_NULL_BUCKET_REMOVE_VALUE_PAGE_OPERATION;
   }
 }

@@ -1,12 +1,12 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpage;
 
 import com.orientechnologies.common.serialization.types.OIntegerSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 
 import java.nio.ByteBuffer;
 
-public class OClusterPageReplaceRecordPageOperation implements OPageOperation {
+public class OClusterPageReplaceRecordPageOperation extends OPageOperation {
   private int    entryIndex;
   private byte[] record;
   private int    recordVersion;
@@ -70,6 +70,6 @@ public class OClusterPageReplaceRecordPageOperation implements OPageOperation {
 
   @Override
   public byte getId() {
-    return PageOperationTypes.CLUSTER_PAGE_REPLACE_RECORD;
+    return WALRecordTypes.CLUSTER_PAGE_REPLACE_RECORD_PAGE_OPERATION;
   }
 }

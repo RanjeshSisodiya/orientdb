@@ -29,6 +29,7 @@ import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OWrite
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -107,6 +108,7 @@ public class NonDurableTxTest {
   }
 
   @Test
+  @Ignore
   public void testWalNotGrowingWhileWalDisabledInTx() throws Exception {
     db.newInstance().field("some-unrelated-key", "some-unrelated-value").save(db.getClusterNameById(db.getDefaultClusterId()));
 

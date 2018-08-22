@@ -23,7 +23,6 @@ package com.orientechnologies.orient.core.storage.index.sbtreebonsai.local;
 import com.orientechnologies.common.serialization.types.OByteSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.sysbucket.OSysBucketInitPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.sysbucket.OSysBucketSetFreeListHeadPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.sysbucket.OSysBucketSetFreeListLengthPageOperation;
@@ -104,8 +103,4 @@ public class OSysBucket extends OBonsaiBucketAbstract {
     addPageOperation(new OSysBucketSetFreeListHeadPageOperation(pointer));
   }
 
-  @Override
-  public byte getWalId() {
-    return OPageIds.SYS_BONSAI_BUCKET;
-  }
 }

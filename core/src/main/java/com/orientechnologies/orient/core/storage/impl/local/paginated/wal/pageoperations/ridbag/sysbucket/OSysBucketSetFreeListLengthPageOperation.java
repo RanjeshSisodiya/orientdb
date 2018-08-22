@@ -1,12 +1,12 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.sysbucket;
 
 import com.orientechnologies.common.serialization.types.OLongSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 
 import java.nio.ByteBuffer;
 
-public class OSysBucketSetFreeListLengthPageOperation implements OPageOperation {
+public class OSysBucketSetFreeListLengthPageOperation extends OPageOperation {
   private long length;
 
   public OSysBucketSetFreeListLengthPageOperation(long length) {
@@ -37,6 +37,6 @@ public class OSysBucketSetFreeListLengthPageOperation implements OPageOperation 
 
   @Override
   public byte getId() {
-    return PageOperationTypes.SYS_BUCKET_SET_FREE_LIST_LENGTH;
+    return WALRecordTypes.SYS_BUCKET_SET_FREE_LIST_LENGTH_PAGE_OPERATION;
   }
 }

@@ -29,13 +29,12 @@ import com.orientechnologies.orient.core.encryption.OEncryption;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.sysbucket.OSysBucketSetFreeListLengthPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.treebucket.OSBTreeBucketAddAllPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.treebucket.OSBTreeBucketAddLeafEntryPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.treebucket.OSBTreeBucketAddNonLeafEntryPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.treebucket.OSBTreeBucketInitPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.treebucket.OSBTreeBucketRemovePageOperation;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.treebucket.OSBTreeBucketSetFreeListFirstIndex;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.treebucket.OSBTreeBucketSetLeftSiblingPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.treebucket.OSBTreeBucketSetRightSiblingPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.treebucket.OSBTreeBucketSetTreeSizePageOperation;
@@ -140,7 +139,7 @@ public class OSBTreeBucket<K, V> extends ODurablePage {
 
   void setValuesFreeListFirstIndex(long pageIndex) {
     setLongValue(FREE_VALUES_LIST_OFFSET, pageIndex);
-    addPageOperation(new OSysBucketSetFreeListLengthPageOperation(pageIndex));
+    addPageOperation(new OSBTreeBucketSetFreeListFirstIndex(pageIndex));
   }
 
   public int find(K key) {
@@ -631,11 +630,6 @@ public class OSBTreeBucket<K, V> extends ODurablePage {
 
   long getRightSibling() {
     return getLongValue(RIGHT_SIBLING_OFFSET);
-  }
-
-  @Override
-  public byte getWalId() {
-    return OPageIds.SBTREE_BUCKET;
   }
 
   public static final class SBTreeEntry<K, V> implements Comparable<SBTreeEntry<K, V>> {

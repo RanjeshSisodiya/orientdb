@@ -24,7 +24,6 @@ import com.orientechnologies.common.serialization.types.OIntegerSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
 
 import java.io.IOException;
 
@@ -112,8 +111,4 @@ public class OSBTreeValuePage extends ODurablePage {
     return (int) Math.ceil(1.0 * contentSize / MAX_BINARY_VALUE_SIZE);
   }
 
-  @Override
-  public byte getWalId() {
-    return OPageIds.SBTREE_VALUE_PAGE;
-  }
 }

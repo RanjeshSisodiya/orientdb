@@ -3,13 +3,13 @@ package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageo
 import com.orientechnologies.common.serialization.types.OByteSerializer;
 import com.orientechnologies.common.serialization.types.OIntegerSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 import com.orientechnologies.orient.core.storage.index.sbtreebonsai.local.OBonsaiBucketPointer;
 
 import java.nio.ByteBuffer;
 
-public class OBonsaiBucketAddNonLeafEntryPageOperation implements OPageOperation {
+public class OBonsaiBucketAddNonLeafEntryPageOperation extends OPageOperation {
   private int                  index;
   private byte[]               key;
   private OBonsaiBucketPointer leftChild;
@@ -114,6 +114,6 @@ public class OBonsaiBucketAddNonLeafEntryPageOperation implements OPageOperation
 
   @Override
   public byte getId() {
-    return PageOperationTypes.BONSAI_BUCKET_ADD_NON_LEAF_ENTRY;
+    return WALRecordTypes.BONSAI_BUCKET_ADD_NON_LEAF_ENTRY_PAGE_OPERATION;
   }
 }

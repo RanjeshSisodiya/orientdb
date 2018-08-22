@@ -1,13 +1,13 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket;
 
 import com.orientechnologies.common.serialization.types.OIntegerSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class OBonsaiBucketAddAllPageOperation implements OPageOperation {
+public class OBonsaiBucketAddAllPageOperation extends OPageOperation {
   private List<byte[]> entries;
   private int          serializedSize = -1;
 
@@ -82,6 +82,6 @@ public class OBonsaiBucketAddAllPageOperation implements OPageOperation {
 
   @Override
   public byte getId() {
-    return PageOperationTypes.BONSAI_BUCKET_ADD_ALL;
+    return WALRecordTypes.BONSAI_BUCKET_ADD_ALL_PAGE_OPERATION;
   }
 }

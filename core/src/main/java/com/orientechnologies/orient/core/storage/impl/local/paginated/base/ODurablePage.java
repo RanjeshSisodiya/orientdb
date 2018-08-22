@@ -78,14 +78,19 @@ public class ODurablePage {
     this.pointer = cacheEntry.getCachePointer();
     this.changes = cacheEntry.getChanges();
     this.pageOperations = cacheEntry.getPageOperations();
-
-    cacheEntry.setWalId(getWalId());
   }
 
   protected void addPageOperation(final OPageOperation pageOperation) {
     if (pageOperations != null) {
+      pageOperation.setFileId(cacheEntry.getFileId());
+      pageOperation.setPageIndex(cacheEntry.getPageIndex());
+
       pageOperations.add(pageOperation);
     }
+  }
+
+  public List<OPageOperation> getPageOperations() {
+    return pageOperations;
   }
 
   public static OLogSequenceNumber getLogSequenceNumberFromPage(ByteBuffer buffer) {
@@ -310,10 +315,6 @@ public class ODurablePage {
     buffer.putLong(lsn.getPosition());
 
     cacheEntry.markDirty();
-  }
-
-  public byte getWalId() {
-    return -1;
   }
 
   @Override

@@ -1,12 +1,12 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterstate;
 
 import com.orientechnologies.common.serialization.types.OLongSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 
 import java.nio.ByteBuffer;
 
-public class OClusterStateSetSizePageOperation implements OPageOperation {
+public class OClusterStateSetSizePageOperation extends OPageOperation {
   private long size;
 
   public OClusterStateSetSizePageOperation() {
@@ -44,6 +44,6 @@ public class OClusterStateSetSizePageOperation implements OPageOperation {
 
   @Override
   public byte getId() {
-    return PageOperationTypes.CLUSTER_STATE_SET_SIZE;
+    return WALRecordTypes.CLUSTER_STATE_SET_SIZE_PAGE_OPERATION;
   }
 }

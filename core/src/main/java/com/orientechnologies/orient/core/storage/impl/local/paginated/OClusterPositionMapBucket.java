@@ -26,7 +26,6 @@ import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.exception.OStorageException;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpositionmap.OClusterPositionMapAddPagePageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpositionmap.OClusterPositionMapAllocatePageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpositionmap.OClusterPositionMapRemovePageOperation;
@@ -201,11 +200,6 @@ public class OClusterPositionMapBucket extends ODurablePage {
 
     final int position = entryPosition(index);
     return getByteValue(position);
-  }
-
-  @Override
-  public byte getWalId() {
-    return OPageIds.CLUSTER_POSITION_MAP_BUCKET;
   }
 
   public static class PositionEntry {

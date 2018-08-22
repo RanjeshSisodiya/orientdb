@@ -132,10 +132,6 @@ public class OCacheEntryImpl implements OCacheEntry {
   }
 
   @Override
-  public void setWalId(byte walId) {
-  }
-
-  @Override
   public boolean equals(Object o) {
     if (this == o)
       return true;

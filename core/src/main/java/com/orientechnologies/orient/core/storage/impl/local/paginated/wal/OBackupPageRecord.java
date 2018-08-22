@@ -1,23 +1,27 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal;
 
 import com.orientechnologies.common.serialization.types.OIntegerSerializer;
+import com.orientechnologies.common.serialization.types.OLongSerializer;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class OBackupPageRecord extends OAbstractPageWALRecord {
+public class OBackupPageRecord extends OAbstractWALRecord {
   private boolean newPage;
   private byte[]  page;
+
+  private long pageIndex;
+  private long fileId;
 
   public OBackupPageRecord() {
   }
 
-  public OBackupPageRecord(long pageIndex, long fileId, OOperationUnitId operationUnitId, boolean newPage, byte[] page) {
-    super(pageIndex, fileId, operationUnitId);
-
+  public OBackupPageRecord(long pageIndex, long fileId, boolean newPage, byte[] page) {
     this.newPage = newPage;
     this.page = page;
+    this.pageIndex = pageIndex;
+    this.fileId = fileId;
   }
 
   @Override
@@ -32,7 +36,11 @@ public class OBackupPageRecord extends OAbstractPageWALRecord {
 
   @Override
   public int toStream(byte[] content, int offset) {
-    offset = super.toStream(content, offset);
+    OLongSerializer.INSTANCE.serializeNative(fileId, content, offset);
+    offset += OLongSerializer.LONG_SIZE;
+
+    OLongSerializer.INSTANCE.serializeNative(pageIndex, content, offset);
+    offset += OLongSerializer.LONG_SIZE;
 
     if (newPage) {
       content[offset] = 1;
@@ -52,7 +60,8 @@ public class OBackupPageRecord extends OAbstractPageWALRecord {
 
   @Override
   public void toStream(ByteBuffer buffer) {
-    super.toStream(buffer);
+    buffer.putLong(fileId);
+    buffer.putLong(pageIndex);
 
     if (newPage) {
       buffer.put((byte) 1);
@@ -66,7 +75,11 @@ public class OBackupPageRecord extends OAbstractPageWALRecord {
 
   @Override
   public int fromStream(byte[] content, int offset) {
-    offset = super.fromStream(content, offset);
+    fileId = OLongSerializer.INSTANCE.deserializeNative(content, offset);
+    offset += OLongSerializer.LONG_SIZE;
+
+    pageIndex = OLongSerializer.INSTANCE.deserializeNative(content, offset);
+    offset += OLongSerializer.LONG_SIZE;
 
     this.newPage = content[offset] == 1;
     offset++;
@@ -87,7 +100,7 @@ public class OBackupPageRecord extends OAbstractPageWALRecord {
 
   @Override
   public int serializedSize() {
-    int size = super.serializedSize();
+    int size = 2 * OLongSerializer.LONG_SIZE;
 
     if (newPage) {
       size++;

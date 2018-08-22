@@ -2,12 +2,12 @@ package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageo
 
 import com.orientechnologies.common.serialization.types.OIntegerSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 
 import java.nio.ByteBuffer;
 
-public class OClusterPageSetNextRecordPointerPageOperation implements OPageOperation {
+public class OClusterPageSetNextRecordPointerPageOperation extends OPageOperation {
   private int  recordPosition;
   private long value;
 
@@ -54,6 +54,6 @@ public class OClusterPageSetNextRecordPointerPageOperation implements OPageOpera
 
   @Override
   public byte getId() {
-    return PageOperationTypes.CLUSTER_PAGE_SET_NEXT_RECORD_POINTER;
+    return WALRecordTypes.CLUSTER_PAGE_SET_NEXT_RECORD_POINTER_PAGE_OPERATION;
   }
 }

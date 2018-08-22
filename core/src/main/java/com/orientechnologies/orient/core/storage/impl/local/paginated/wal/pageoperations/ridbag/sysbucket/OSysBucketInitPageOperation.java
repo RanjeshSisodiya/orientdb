@@ -1,11 +1,11 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.sysbucket;
 
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 
 import java.nio.ByteBuffer;
 
-public class OSysBucketInitPageOperation implements OPageOperation {
+public class OSysBucketInitPageOperation extends OPageOperation {
   @Override
   public int toStream(byte[] content, int offset) {
     return offset;
@@ -27,6 +27,6 @@ public class OSysBucketInitPageOperation implements OPageOperation {
 
   @Override
   public byte getId() {
-    return PageOperationTypes.SYS_BUCKET_INIT;
+    return WALRecordTypes.SYS_BUCKET_INIT_PAGE_OPERATION;
   }
 }

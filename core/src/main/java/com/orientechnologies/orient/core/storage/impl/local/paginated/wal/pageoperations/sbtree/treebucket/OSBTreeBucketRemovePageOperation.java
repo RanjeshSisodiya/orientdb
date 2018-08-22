@@ -2,12 +2,12 @@ package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageo
 
 import com.orientechnologies.common.serialization.types.OByteSerializer;
 import com.orientechnologies.common.serialization.types.OIntegerSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 
 import java.nio.ByteBuffer;
 
-public class OSBTreeBucketRemovePageOperation implements OPageOperation {
+public class OSBTreeBucketRemovePageOperation extends OPageOperation {
   private int     entryIndex;
   private boolean isEncrypted;
 
@@ -54,6 +54,6 @@ public class OSBTreeBucketRemovePageOperation implements OPageOperation {
 
   @Override
   public byte getId() {
-    return PageOperationTypes.SBTREE_BUCKET_REMOVE;
+    return WALRecordTypes.SBTREE_BUCKET_REMOVE_PAGE_OPERATION;
   }
 }

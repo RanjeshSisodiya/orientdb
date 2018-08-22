@@ -24,7 +24,6 @@ import com.orientechnologies.common.serialization.types.OByteSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
 
 import java.io.IOException;
 
@@ -150,8 +149,4 @@ public class OHashIndexFileLevelMetadataPage extends ODurablePage {
     setByteValue(offset, (byte) 0);
   }
 
-  @Override
-  public byte getWalId() {
-    return OPageIds.HASH_INDEX_FILE_LEVEL_METADATA;
-  }
 }

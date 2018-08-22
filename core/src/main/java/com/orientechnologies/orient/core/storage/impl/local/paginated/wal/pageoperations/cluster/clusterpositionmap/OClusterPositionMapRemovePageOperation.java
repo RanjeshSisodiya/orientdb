@@ -1,11 +1,12 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.cluster.clusterpositionmap;
 
 import com.orientechnologies.common.serialization.types.OIntegerSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
 
 import java.nio.ByteBuffer;
 
-public class OClusterPositionMapRemovePageOperation implements OPageOperation {
+public class OClusterPositionMapRemovePageOperation extends OPageOperation {
   private int index;
 
   public OClusterPositionMapRemovePageOperation() {
@@ -41,6 +42,6 @@ public class OClusterPositionMapRemovePageOperation implements OPageOperation {
 
   @Override
   public byte getId() {
-    return 0;
+    return WALRecordTypes.CLUSTER_POSITION_MAP_REMOVE_PAGE_OPERATION;
   }
 }

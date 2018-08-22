@@ -1,12 +1,12 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket;
 
 import com.orientechnologies.common.serialization.types.OByteSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 
 import java.nio.ByteBuffer;
 
-public class OBonsaiBucketSetDeletedPageOperation implements OPageOperation {
+public class OBonsaiBucketSetDeletedPageOperation extends OPageOperation {
   private boolean deleted;
 
   public OBonsaiBucketSetDeletedPageOperation() {
@@ -44,6 +44,6 @@ public class OBonsaiBucketSetDeletedPageOperation implements OPageOperation {
 
   @Override
   public byte getId() {
-    return PageOperationTypes.BONSAI_BUCKET_SET_DELETED;
+    return WALRecordTypes.BONSAI_BUCKET_SET_DELETED_PAGE_OPERATION;
   }
 }

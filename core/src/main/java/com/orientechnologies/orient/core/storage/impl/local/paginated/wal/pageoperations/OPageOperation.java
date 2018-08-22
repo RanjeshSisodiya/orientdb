@@ -1,15 +1,10 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations;
 
-import java.nio.ByteBuffer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.OAbstractPageWALRecord;
 
-public interface OPageOperation {
-  int toStream(byte[] content, int offset);
-
-  void toStream(ByteBuffer buffer);
-
-  int fromStream(byte[] content, int offset);
-
-  int serializedSize();
-
-  byte getId();
+public abstract class OPageOperation extends OAbstractPageWALRecord {
+  @Override
+  public boolean isUpdateMasterRecord() {
+    return false;
+  }
 }

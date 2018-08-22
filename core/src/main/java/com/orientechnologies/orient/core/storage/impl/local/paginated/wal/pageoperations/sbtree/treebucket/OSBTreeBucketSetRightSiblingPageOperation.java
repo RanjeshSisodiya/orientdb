@@ -1,12 +1,12 @@
 package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.sbtree.treebucket;
 
 import com.orientechnologies.common.serialization.types.OLongSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.PageOperationTypes;
 
 import java.nio.ByteBuffer;
 
-public class OSBTreeBucketSetRightSiblingPageOperation implements OPageOperation {
+public class OSBTreeBucketSetRightSiblingPageOperation extends OPageOperation {
   private long pageIndex;
 
   public OSBTreeBucketSetRightSiblingPageOperation() {
@@ -40,6 +40,6 @@ public class OSBTreeBucketSetRightSiblingPageOperation implements OPageOperation
 
   @Override
   public byte getId() {
-    return PageOperationTypes.SBTREE_BUCKET_SET_RIGHT_SIBLING;
+    return WALRecordTypes.SBTREE_BUCKET_SET_RIGHT_SIBLING_PAGE_OPERATION;
   }
 }

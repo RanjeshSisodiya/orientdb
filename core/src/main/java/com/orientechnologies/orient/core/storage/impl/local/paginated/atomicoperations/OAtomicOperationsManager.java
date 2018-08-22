@@ -24,7 +24,6 @@ import com.orientechnologies.common.concur.lock.OInterruptedException;
 import com.orientechnologies.common.concur.lock.OOneEntryPerKeyLockManager;
 import com.orientechnologies.common.exception.OException;
 import com.orientechnologies.common.log.OLogManager;
-import com.orientechnologies.common.util.OPair;
 import com.orientechnologies.orient.core.OOrientListenerAbstract;
 import com.orientechnologies.orient.core.Orient;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
@@ -61,8 +60,6 @@ import java.util.concurrent.locks.LockSupport;
  * @since 12/3/13
  */
 public class OAtomicOperationsManager implements OAtomicOperationsMangerMXBean {
-  private volatile boolean trackAtomicOperations = OGlobalConfiguration.TX_TRACK_ATOMIC_OPERATIONS.getValueAsBoolean();
-
   private final LongAdder atomicOperationsCount = new LongAdder();
 
   private final AtomicInteger freezeRequests = new AtomicInteger();
@@ -96,8 +93,6 @@ public class OAtomicOperationsManager implements OAtomicOperationsMangerMXBean {
       OGlobalConfiguration.COMPONENTS_LOCK_CACHE.getValueAsInteger());
   private final OReadCache                         readCache;
   private final OWriteCache                        writeCache;
-
-  private final Map<OOperationUnitId, OPair<String, StackTraceElement[]>> activeAtomicOperations = new ConcurrentHashMap<>();
 
   public OAtomicOperationsManager(OAbstractPaginatedStorage storage) {
     this.storage = storage;
@@ -177,11 +172,6 @@ public class OAtomicOperationsManager implements OAtomicOperationsMangerMXBean {
 
     operation = new OAtomicOperation(lsn, unitId, readCache, writeCache, storage.getId(), writeAheadLog);
     currentOperation.set(operation);
-
-    if (trackAtomicOperations) {
-      final Thread thread = Thread.currentThread();
-      activeAtomicOperations.put(unitId, new OPair<>(thread.getName(), thread.getStackTrace()));
-    }
 
     if (useWal && trackNonTxOperations && storage.getStorageTransaction() == null)
       writeAheadLog.log(new ONonTxOperationPerformedWALRecord());
@@ -366,32 +356,35 @@ public class OAtomicOperationsManager implements OAtomicOperationsMangerMXBean {
     assert counter > 0;
 
     if (operation.isRollback() && !rollback) {
-      final StringWriter writer = new StringWriter();
-      writer.append("Atomic operation was rolled back by internal component");
-      if (operation.getRollbackException() != null) {
-        writer.append(", exception which caused this rollback is :\n");
-        operation.getRollbackException().printStackTrace(new PrintWriter(writer));
-        writer.append("\r\n");
-      }
+      final ONestedRollbackException nre;
 
-      atomicOperationsCount.decrement();
-
-      operation.decrementCounter();
-
-      if (counter == 1) {
-        final Iterator<String> lockedObjectIterator = operation.lockedObjects().iterator();
-
-        while (lockedObjectIterator.hasNext()) {
-          final String lockedObject = lockedObjectIterator.next();
-          lockedObjectIterator.remove();
-
-          lockManager.releaseLock(this, lockedObject, OOneEntryPerKeyLockManager.LOCK.EXCLUSIVE);
+      try (StringWriter writer = new StringWriter()) {
+        writer.append("Atomic operation was rolled back by internal component");
+        if (operation.getRollbackException() != null) {
+          writer.append(", exception which caused this rollback is :\n");
+          operation.getRollbackException().printStackTrace(new PrintWriter(writer));
+          writer.append("\r\n");
         }
 
-        currentOperation.set(null);
-      }
+        atomicOperationsCount.decrement();
 
-      final ONestedRollbackException nre = new ONestedRollbackException(writer.toString());
+        operation.decrementCounter();
+
+        if (counter == 1) {
+          final Iterator<String> lockedObjectIterator = operation.lockedObjects().iterator();
+
+          while (lockedObjectIterator.hasNext()) {
+            final String lockedObject = lockedObjectIterator.next();
+            lockedObjectIterator.remove();
+
+            lockManager.releaseLock(this, lockedObject, OOneEntryPerKeyLockManager.LOCK.EXCLUSIVE);
+          }
+
+          currentOperation.set(null);
+        }
+
+        nre = new ONestedRollbackException(writer.toString());
+      }
       throw OException.wrapException(nre, exception);
     }
 
@@ -413,9 +406,6 @@ public class OAtomicOperationsManager implements OAtomicOperationsMangerMXBean {
         }
 
         atomicOperationsCount.decrement();
-        if (trackAtomicOperations) {
-          activeAtomicOperations.remove(operation.getOperationUnitId());
-        }
       } catch (Error e) {
         storage.handleJVMError(e);
         throw e;
@@ -492,38 +482,15 @@ public class OAtomicOperationsManager implements OAtomicOperationsMangerMXBean {
 
   @Override
   public void trackAtomicOperations() {
-    activeAtomicOperations.clear();
-    trackAtomicOperations = true;
   }
 
   @Override
   public void doNotTrackAtomicOperations() {
-    trackAtomicOperations = false;
-    activeAtomicOperations.clear();
   }
 
   @Override
   public String dumpActiveAtomicOperations() {
-    if (!trackAtomicOperations)
-      activeAtomicOperations.clear();
-
-    final StringWriter writer = new StringWriter();
-    writer.append("List of active atomic operations: \r\n");
-    writer.append("------------------------------------------------------------------------------------------------\r\n");
-    for (Map.Entry<OOperationUnitId, OPair<String, StackTraceElement[]>> entry : activeAtomicOperations.entrySet()) {
-      writer.append("Operation unit id :").append(entry.getKey().toString()).append("\r\n");
-      writer.append("Started at thread : ").append(entry.getValue().getKey()).append("\r\n");
-      writer.append("Stack trace of method which started this operation : \r\n");
-
-      StackTraceElement[] stackTraceElements = entry.getValue().getValue();
-      for (int i = 1; i < stackTraceElements.length; i++) {
-        writer.append("\tat ").append(stackTraceElements[i].toString()).append("\r\n");
-      }
-
-      writer.append("\r\n\r\n");
-    }
-    writer.append("-------------------------------------------------------------------------------------------------\r\n");
-    return writer.toString();
+    return "";
   }
 
   private static final class FreezeParameters {

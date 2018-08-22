@@ -24,7 +24,6 @@ import com.orientechnologies.common.serialization.types.OByteSerializer;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurablePage;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
 
 import java.io.IOException;
 
@@ -97,8 +96,4 @@ public class ODirectoryPage extends ODurablePage {
     return ITEMS_OFFSET;
   }
 
-  @Override
-  public byte getWalId() {
-    return OPageIds.HASH_INDEX_DIRECTORY_PAGE;
-  }
 }

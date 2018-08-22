@@ -28,7 +28,6 @@ import com.orientechnologies.common.serialization.types.OLongSerializer;
 import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.exception.OSBTreeBonsaiLocalException;
 import com.orientechnologies.orient.core.storage.cache.OCacheEntry;
-import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageIds;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketAddAllPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketAddLeafEntryPageOperation;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.ridbag.bonsaibucket.OBonsaiBucketAddNonLeafEntryPageOperation;
@@ -523,8 +522,4 @@ public class OSBTreeBonsaiBucket<K, V> extends OBonsaiBucketAbstract {
           "Serialized key-value pair size bigger than allowed " + entreeSize + " vs " + MAX_ENTREE_SIZE + ".", tree);
   }
 
-  @Override
-  public byte getWalId() {
-    return OPageIds.BONSAI_BUCKET;
-  }
 }

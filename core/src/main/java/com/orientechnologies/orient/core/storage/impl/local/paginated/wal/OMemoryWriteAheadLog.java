@@ -50,18 +50,18 @@ public class OMemoryWriteAheadLog extends OAbstractWriteAheadLog {
   }
 
   @Override
-  public OLogSequenceNumber logAtomicOperationStartRecord(boolean isRollbackSupported, OOperationUnitId unitId) throws IOException {
+  public OLogSequenceNumber logAtomicOperationStartRecord(boolean isRollbackSupported, OOperationUnitId unitId) {
     return log(new OAtomicUnitStartRecord(isRollbackSupported, unitId));
   }
 
   @Override
   public OLogSequenceNumber logAtomicOperationEndRecord(OOperationUnitId operationUnitId, boolean rollback,
-      OLogSequenceNumber startLsn, Map<String, OAtomicOperationMetadata<?>> atomicOperationMetadata) throws IOException {
+      OLogSequenceNumber startLsn, Map<String, OAtomicOperationMetadata<?>> atomicOperationMetadata) {
     return log(new OAtomicUnitEndRecord(operationUnitId, rollback, atomicOperationMetadata));
   }
 
   @Override
-  public OLogSequenceNumber log(OWriteableWALRecord record) throws IOException {
+  public OLogSequenceNumber log(OWriteableWALRecord record) {
     return new OLogSequenceNumber(Long.MAX_VALUE, Long.MAX_VALUE);
   }
 
@@ -84,7 +84,7 @@ public class OMemoryWriteAheadLog extends OAbstractWriteAheadLog {
   }
 
   @Override
-  public List<OWriteableWALRecord> next(OLogSequenceNumber lsn, int limit) throws IOException {
+  public List<OWriteableWALRecord> next(OLogSequenceNumber lsn, int limit) {
     throw new UnsupportedOperationException("Operation not supported for in memory storage.");
   }
 
@@ -94,7 +94,7 @@ public class OMemoryWriteAheadLog extends OAbstractWriteAheadLog {
   }
 
   @Override
-  public boolean cutTill(OLogSequenceNumber lsn) throws IOException {
+  public boolean cutTill(OLogSequenceNumber lsn) {
     return false;
   }
 

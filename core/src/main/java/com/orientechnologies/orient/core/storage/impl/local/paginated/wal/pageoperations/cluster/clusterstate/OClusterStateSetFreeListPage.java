@@ -2,11 +2,12 @@ package com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageo
 
 import com.orientechnologies.common.serialization.types.OIntegerSerializer;
 import com.orientechnologies.common.serialization.types.OLongSerializer;
+import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.WALRecordTypes;
 import com.orientechnologies.orient.core.storage.impl.local.paginated.wal.pageoperations.OPageOperation;
 
 import java.nio.ByteBuffer;
 
-public class OClusterStateSetFreeListPage implements OPageOperation {
+public class OClusterStateSetFreeListPage extends OPageOperation {
   private int  index;
   private long pageIndex;
 
@@ -53,6 +54,6 @@ public class OClusterStateSetFreeListPage implements OPageOperation {
 
   @Override
   public byte getId() {
-    return 0;
+    return WALRecordTypes.CLUSTER_STATE_SET_FREE_LIST_PAGE_OPERATION;
   }
 }
