@@ -49,7 +49,7 @@ public class OHashIndexBucket<K, V> extends ODurablePage implements Iterable<OHa
   private static final int NEXT_REMOVED_BUCKET_OFFSET = HISTORY_OFFSET + OLongSerializer.LONG_SIZE * 64;
   private static final int POSITIONS_ARRAY_OFFSET     = NEXT_REMOVED_BUCKET_OFFSET + OLongSerializer.LONG_SIZE;
 
-  public static final int MAX_BUCKET_SIZE_BYTES = OGlobalConfiguration.DISK_CACHE_PAGE_SIZE.getValueAsInteger() * 1024;
+  private static final int MAX_BUCKET_SIZE_BYTES = OGlobalConfiguration.DISK_CACHE_PAGE_SIZE.getValueAsInteger() * 1024;
 
   private final OBinarySerializer<K> keySerializer;
   private final OBinarySerializer<V> valueSerializer;
@@ -58,8 +58,8 @@ public class OHashIndexBucket<K, V> extends ODurablePage implements Iterable<OHa
   private final OEncryption          encryption;
 
   @SuppressFBWarnings("EI_EXPOSE_REP2")
-  public OHashIndexBucket(int depth, OCacheEntry cacheEntry, OBinarySerializer<K> keySerializer,
-      OBinarySerializer<V> valueSerializer, OType[] keyTypes, OEncryption encryption) throws IOException {
+  OHashIndexBucket(int depth, OCacheEntry cacheEntry, OBinarySerializer<K> keySerializer, OBinarySerializer<V> valueSerializer,
+      OType[] keyTypes, OEncryption encryption) throws IOException {
     super(cacheEntry);
 
     this.keySerializer = keySerializer;
@@ -71,7 +71,7 @@ public class OHashIndexBucket<K, V> extends ODurablePage implements Iterable<OHa
   }
 
   @SuppressFBWarnings("EI_EXPOSE_REP2")
-  public OHashIndexBucket(OCacheEntry cacheEntry, OBinarySerializer<K> keySerializer, OBinarySerializer<V> valueSerializer,
+  OHashIndexBucket(OCacheEntry cacheEntry, OBinarySerializer<K> keySerializer, OBinarySerializer<V> valueSerializer,
       OType[] keyTypes, OEncryption encryption) {
     super(cacheEntry);
 

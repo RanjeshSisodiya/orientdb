@@ -506,11 +506,11 @@ public class OAtomicOperation {
 
               if (!filePageChanges.changes.isEmpty()) {
                 final OLogSequenceNumber changeLSN = filePageChanges.getChangeLSN();
-                if (changeLSN == null) {
-                  throw new IllegalStateException("Change LSN can not be null");
+                if (changeLSN != null) {
+                  durablePage.setLsn(changeLSN);
+                } else {
+                  OLogManager.instance().errorNoDb(this, "Change LSN is absent", null);
                 }
-
-                durablePage.setLsn(changeLSN);
               }
 
               if (filePageChanges.pinPage) {

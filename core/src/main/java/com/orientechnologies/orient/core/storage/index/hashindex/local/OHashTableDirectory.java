@@ -39,7 +39,7 @@ import java.io.IOException;
 public class OHashTableDirectory extends ODurableComponent {
   static final int ITEM_SIZE = OLongSerializer.LONG_SIZE;
 
-  private static final int LEVEL_SIZE = OLocalHashTable20.MAX_LEVEL_SIZE;
+  private static final int LEVEL_SIZE = OLocalHashTable.MAX_LEVEL_SIZE;
 
   static final int BINARY_LEVEL_SIZE = LEVEL_SIZE * ITEM_SIZE + 3 * OByteSerializer.BYTE_SIZE;
 

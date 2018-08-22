@@ -36,26 +36,26 @@ public class ODirectoryFirstPage extends ODirectoryPage {
 
   private static final int ITEMS_OFFSET     = TOMBSTONE_OFFSET + OIntegerSerializer.INT_SIZE;
 
-  public static final int  NODES_PER_PAGE   = (OGlobalConfiguration.DISK_CACHE_PAGE_SIZE.getValueAsInteger() * 1024 - ITEMS_OFFSET)
+  static final int NODES_PER_PAGE = (OGlobalConfiguration.DISK_CACHE_PAGE_SIZE.getValueAsInteger() * 1024 - ITEMS_OFFSET)
                                                 / OHashTableDirectory.BINARY_LEVEL_SIZE;
 
-  public ODirectoryFirstPage(OCacheEntry cacheEntry, OCacheEntry entry) {
+  ODirectoryFirstPage(OCacheEntry cacheEntry, OCacheEntry entry) {
     super(cacheEntry, entry);
   }
 
-  public void setTreeSize(int treeSize) throws IOException {
+  void setTreeSize(int treeSize) throws IOException {
     setIntValue(TREE_SIZE_OFFSET, treeSize);
   }
 
-  public int getTreeSize() {
+  int getTreeSize() {
     return getIntValue(TREE_SIZE_OFFSET);
   }
 
-  public void setTombstone(int tombstone) throws IOException {
+  void setTombstone(int tombstone) throws IOException {
     setIntValue(TOMBSTONE_OFFSET, tombstone);
   }
 
-  public int getTombstone() {
+  int getTombstone() {
     return getIntValue(TOMBSTONE_OFFSET);
   }
 

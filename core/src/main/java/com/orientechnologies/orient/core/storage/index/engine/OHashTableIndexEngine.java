@@ -21,7 +21,6 @@ package com.orientechnologies.orient.core.storage.index.engine;
 
 import com.orientechnologies.common.serialization.types.OBinarySerializer;
 import com.orientechnologies.common.util.OCommonConst;
-import com.orientechnologies.orient.core.config.OGlobalConfiguration;
 import com.orientechnologies.orient.core.db.record.OIdentifiable;
 import com.orientechnologies.orient.core.encryption.OEncryption;
 import com.orientechnologies.orient.core.index.OIndexAbstractCursor;
@@ -39,7 +38,6 @@ import com.orientechnologies.orient.core.storage.index.hashindex.local.OHashFunc
 import com.orientechnologies.orient.core.storage.index.hashindex.local.OHashIndexBucket;
 import com.orientechnologies.orient.core.storage.index.hashindex.local.OHashTable;
 import com.orientechnologies.orient.core.storage.index.hashindex.local.OLocalHashTable;
-import com.orientechnologies.orient.core.storage.index.hashindex.local.OLocalHashTable20;
 import com.orientechnologies.orient.core.storage.index.hashindex.local.OMurmurHash3HashFunction;
 import com.orientechnologies.orient.core.storage.index.hashindex.local.OSHA256HashFunction;
 
@@ -69,18 +67,9 @@ public final class OHashTableIndexEngine implements OIndexEngine {
   private final String name;
 
   public OHashTableIndexEngine(String name, Boolean durableInNonTxMode, OAbstractPaginatedStorage storage, int version) {
-
-    boolean durableInNonTx;
-    if (durableInNonTxMode == null)
-      durableInNonTx = storage.getConfiguration().getContextConfiguration()
-          .getValueAsBoolean(OGlobalConfiguration.INDEX_DURABLE_IN_NON_TX_MODE);
-    else
-      durableInNonTx = durableInNonTxMode;
-
     this.version = version;
     if (version < 2) {
-      hashTable = new OLocalHashTable20<Object, Object>(name, METADATA_FILE_EXTENSION, TREE_FILE_EXTENSION, BUCKET_FILE_EXTENSION,
-          NULL_BUCKET_FILE_EXTENSION, durableInNonTx, storage);
+      throw new IllegalStateException("Not supported index version : " + version);
     } else {
       hashTable = new OLocalHashTable<Object, Object>(name, METADATA_FILE_EXTENSION, TREE_FILE_EXTENSION, BUCKET_FILE_EXTENSION,
           NULL_BUCKET_FILE_EXTENSION, storage);
