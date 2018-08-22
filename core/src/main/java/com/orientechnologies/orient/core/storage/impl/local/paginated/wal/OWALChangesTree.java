@@ -842,4 +842,9 @@ public class OWALChangesTree implements OWALChanges {
   public void toStream(ByteBuffer byteBuffer) {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public boolean isEmpty() {
+    throw new UnsupportedOperationException();
+  }
 }

@@ -71,4 +71,6 @@ public interface OWALChanges {
    * @return the offset+read bytes.
    */
   int fromStream(int offset, byte[] stream);
+
+  boolean isEmpty();
 }

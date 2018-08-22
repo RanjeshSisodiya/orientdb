@@ -503,9 +503,13 @@ public class OAtomicOperation {
               cacheEntry.setEndLSN(txEndLsn);
 
               durablePage.restoreChanges(filePageChanges.changes);
-              final OLogSequenceNumber changeLSN = filePageChanges.getChangeLSN();
 
-              if (changeLSN != null) {
+              if (!filePageChanges.changes.isEmpty()) {
+                final OLogSequenceNumber changeLSN = filePageChanges.getChangeLSN();
+                if (changeLSN == null) {
+                  throw new IllegalStateException("Change LSN can not be null");
+                }
+
                 durablePage.setLsn(changeLSN);
               }
 

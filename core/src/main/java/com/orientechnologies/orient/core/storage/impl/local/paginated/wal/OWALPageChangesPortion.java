@@ -140,6 +140,11 @@ public class OWALPageChangesPortion implements OWALChanges {
   }
 
   @Override
+  public boolean isEmpty() {
+    return pageChunks == null;
+  }
+
+  @Override
   public int serializedSize() {
     int offset;
 
